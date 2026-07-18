@@ -42,7 +42,10 @@ Autentiseres via query-parametere (uvanlig, men slik er det):
 - `token=Bearer <JWT>`
 - `EIO=4`
 - `transport=websocket`
-- `location=<locationId>`
+- `locationId=<locationId>` — NB: parameteren heter `locationId`, ikke
+  `location` slik enkelte referanser skriver. Verifisert 2026-07-18: serveren
+  validerer `locationId` (isUuid) og disconnecter klienter uten den, med en
+  `exception`-event som eneste forvarsel.
 
 Event `device-state-changed` har `data` med `deviceId`, `gatewayId`,
 `locationId`, `modelId`, `rootLocationId`, `changes[]`. Hver `change`:

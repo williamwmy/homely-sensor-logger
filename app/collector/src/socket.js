@@ -8,7 +8,10 @@ import { log } from './logger.js';
 export function startSocket({ client, state, ingest, apiBase, locationId }) {
   const socket = io(apiBase, {
     transports: ['websocket'],
+    // Serveren validerer `locationId` (isUuid) og kaster ut klienter uten den.
+    // Referansene nevner `location`, så begge sendes for sikkerhets skyld.
     query: {
+      locationId,
       location: locationId,
       token: `Bearer ${client.currentToken()}`,
     },
@@ -29,6 +32,12 @@ export function startSocket({ client, state, ingest, apiBase, locationId }) {
   });
 
   socket.on('connect', () => log.info('websocket tilkoblet', { locationId }));
+
+  // Serveren melder valideringsfeil o.l. som en egen event rett før den
+  // kobler fra — uten denne loggen er en kick helt stum.
+  socket.on('exception', (err) =>
+    log.warn('websocket-exception fra server', { locationId, error: JSON.stringify(err) })
+  );
 
   socket.on('disconnect', (reason) => {
     log.warn('websocket frakoblet', { locationId, reason });
