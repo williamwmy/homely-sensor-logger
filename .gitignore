@@ -1,0 +1,13 @@
+# Secrets og lokal konfig
+.env
+
+# Terraform state og arbeidsfiler
+*.tfstate
+*.tfstate.backup
+.terraform/
+tfplan
+terraform.tfvars
+# NB: .terraform.lock.hcl skal committes — ikke legg den til her
+
+# Node
+node_modules/

@@ -1,0 +1,17 @@
+{
+  "name": "homely-collector",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "^8.12.0",
+    "socket.io-client": "^4.7.5"
+  }
+}
