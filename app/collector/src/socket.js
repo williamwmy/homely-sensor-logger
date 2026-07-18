@@ -29,7 +29,22 @@ export function startSocket({ client, state, ingest, apiBase, locationId }) {
   });
 
   socket.on('connect', () => log.info('websocket tilkoblet', { locationId }));
-  socket.on('disconnect', (reason) => log.warn('websocket frakoblet', { locationId, reason }));
+
+  socket.on('disconnect', (reason) => {
+    log.warn('websocket frakoblet', { locationId, reason });
+    // Innebygd reconnect gjelder bare transportfeil. Kaster serveren oss ut
+    // (skjer jevnlig hos Homely, bl.a. ved rate-limiting og token-utløp) må vi
+    // selv koble til igjen — med ferskt token i handshaken.
+    if (reason === 'io server disconnect') {
+      setTimeout(() => {
+        socket.io.opts.query = {
+          ...socket.io.opts.query,
+          token: `Bearer ${client.currentToken()}`,
+        };
+        socket.connect();
+      }, 15_000);
+    }
+  });
   socket.on('connect_error', (err) =>
     log.warn('websocket-tilkoblingsfeil', { locationId, error: String(err?.message ?? err) })
   );
