@@ -110,7 +110,9 @@ export class HomelyClient {
       });
     }
     if (!res.ok) {
-      throw new Error(`GET ${path} feilet: HTTP ${res.status}`);
+      const err = new Error(`GET ${path} feilet: HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
     }
     return res.json();
   }

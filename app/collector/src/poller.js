@@ -8,6 +8,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // jevnlig, og alt med nyere lastUpdated enn sist sett skrives inn.
 export function startPoller({ client, state, ingest, locationId, intervalMs }) {
   (async () => {
+    let delayMs = intervalMs;
     for (;;) {
       try {
         const home = await client.home(locationId);
@@ -42,11 +43,22 @@ export function startPoller({ client, state, ingest, locationId, intervalMs }) {
         if (inserted > 0) {
           log.info('poll fanget endringer websocketen bommet på', { locationId, inserted });
         }
+        delayMs = intervalMs;
       } catch (err) {
-        log.warn('poll feilet', { locationId, error: String(err) });
+        // Ved rate-limit (429): trekk oss tilbake i stedet for å forverre det.
+        // Ingen data går tapt — neste vellykkede poll henter alt via lastUpdated.
+        if (err.status === 429) {
+          delayMs = Math.min(delayMs * 2, 900_000);
+          log.warn('poll rate-limitet, øker intervallet', {
+            locationId,
+            nextPollSeconds: delayMs / 1000,
+          });
+        } else {
+          log.warn('poll feilet', { locationId, error: String(err) });
+        }
       }
 
-      await sleep(intervalMs);
+      await sleep(delayMs);
     }
   })();
 }
