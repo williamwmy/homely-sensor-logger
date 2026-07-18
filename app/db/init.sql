@@ -16,3 +16,16 @@ CREATE TABLE IF NOT EXISTS events (
 
 CREATE INDEX IF NOT EXISTS events_device_name_time_idx ON events (device_name, last_updated DESC);
 CREATE INDEX IF NOT EXISTS events_last_updated_idx ON events (last_updated DESC);
+
+-- Varsler notifier-tjenesten om hver ny rad via LISTEN/NOTIFY.
+CREATE OR REPLACE FUNCTION notify_event() RETURNS trigger AS $$
+BEGIN
+  PERFORM pg_notify('events_channel', row_to_json(NEW)::text);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS events_notify ON events;
+CREATE TRIGGER events_notify
+  AFTER INSERT ON events
+  FOR EACH ROW EXECUTE FUNCTION notify_event();

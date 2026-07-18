@@ -42,6 +42,22 @@ docker compose up -d
 docker compose logs -f collector   # sjekk at den logger inn og kobler til
 ```
 
+## Mobil: dashboard og push-varsler
+
+- **Grafana** (dashboard): kjører på VM-en, port 3000 — bevisst ikke åpnet i
+  NSG-en. Nås via [Tailscale](https://tailscale.com): installer på VM-en
+  (`curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`) og
+  på mobilen, logg inn på samme konto, og åpne `http://<vm-tailscale-navn>:3000`.
+  Innlogging: `admin` + `GRAFANA_ADMIN_PASSWORD` fra `.env`.
+- **Push-varsler** (ntfy): `notifier`-tjenesten lytter på nye events i Postgres
+  og sender til ntfy-topics. Installer [ntfy-appen](https://ntfy.sh) og abonner på:
+  - `homely-<NTFY_TOPIC_SECRET>-dor` — dører åpnes/lukkes
+  - `homely-<NTFY_TOPIC_SECRET>-sikkerhet` — røyk/brann og sabotasje
+  - `homely-<NTFY_TOPIC_SECRET>-batteri` — lavt batteri
+
+  Topic-navnene er hemmeligheten — del dem ikke. Hvilke devices som ikke skal
+  varsle styres med `NOTIFY_IGNORE_DEVICES` i `.env`.
+
 ## Eksempel-spørringer
 
 Åpne en psql-sesjon i db-containeren:

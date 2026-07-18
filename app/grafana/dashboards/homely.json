@@ -1,0 +1,102 @@
+{
+  "uid": "homely-events",
+  "title": "Homely Sensor Logger",
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "state-timeline",
+      "title": "Dører og bevegelse (åpen/utløst = rød)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT last_updated AS \"time\", device_name AS metric, CASE WHEN value::text = 'true' THEN 1 ELSE 0 END AS state FROM events WHERE feature = 'alarm' AND state_name = 'alarm' AND $__timeFilter(last_updated) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 70, "lineWidth": 0 },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "Lukket", "color": "green" }, "1": { "text": "Åpen", "color": "red" } } }
+          ],
+          "max": 1,
+          "min": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Temperatur per sensor",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 9 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT last_updated AS \"time\", device_name AS metric, (value::text)::float AS temperatur FROM events WHERE feature = 'temperature' AND state_name = 'temperature' AND $__timeFilter(last_updated) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "spanNulls": true, "lineInterpolation": "stepAfter" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "Siste 50 events",
+      "gridPos": { "h": 10, "w": 14, "x": 0, "y": 18 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT last_updated AS \"tid\", device_name AS \"device\", feature, state_name AS \"state\", value::text AS \"verdi\", source AS \"kilde\" FROM events ORDER BY last_updated DESC LIMIT 50"
+        }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] }
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Events per sensor siste 7 dager",
+      "gridPos": { "h": 10, "w": 5, "x": 14, "y": 18 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT device_name AS \"device\", count(*) AS \"antall\" FROM events WHERE last_updated > now() - interval '7 days' GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Batteristatus (siste per sensor)",
+      "gridPos": { "h": 10, "w": 5, "x": 19, "y": 18 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT DISTINCT ON (device_id, state_name) device_name AS \"device\", state_name AS \"state\", value::text AS \"verdi\" FROM events WHERE feature = 'battery' ORDER BY device_id, state_name, last_updated DESC"
+        }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] }
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}
