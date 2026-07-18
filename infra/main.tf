@@ -1,6 +1,16 @@
 terraform {
   required_version = ">= 1.5.0"
 
+  # Remote state i Azure Storage, så staten følger kontoen og ikke maskinen.
+  # Storage-kontoen opprettes én gang med ./bootstrap-state.sh før terraform init.
+  # Autentiseres via samme az login-sesjon som provideren.
+  backend "azurerm" {
+    resource_group_name  = "tfstate-rg"
+    storage_account_name = "williamwmytfstate"
+    container_name       = "tfstate"
+    key                  = "homely-logger.tfstate"
+  }
+
   required_providers {
     azurerm = {
       # v3 autentiserer sømløst mot en eksisterende `az login`-sesjon;

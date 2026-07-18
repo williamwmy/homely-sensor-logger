@@ -17,10 +17,14 @@ Krever Terraform og en aktiv `az login`-sesjon (f.eks. Azure Cloud Shell).
 
 ```bash
 cd infra
+./bootstrap-state.sh                           # engangs: storage for remote state
 cp terraform.tfvars.example terraform.tfvars   # fyll inn IP og SSH-nøkkel
 terraform init
 terraform apply
 ```
+
+Terraform-staten lagres i en Azure Storage-konto (`azurerm`-backend), så den
+følger Azure-kontoen din og ikke maskinen du kjører fra.
 
 Output viser offentlig IP og en ferdig `ssh`-kommando.
 
