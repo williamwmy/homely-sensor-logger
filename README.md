@@ -55,6 +55,16 @@ Senere deployer (etter `git push`) gjøres fra din egen maskin med:
 ./deploy.sh   # ssh + git pull + docker compose up -d --build på VM-en
 ```
 
+## Rive alt
+
+```bash
+./destroy.sh          # avskjedsdump av databasen → tailscale logout → terraform destroy
+./destroy.sh --full   # river også tfstate-rg og NetworkWatcherRG
+```
+
+Scriptet krever eksplisitt bekreftelse og redder en komprimert `pg_dump`
+til lokal fil før VM-en (og dermed databasen) forsvinner.
+
 ## Mobil: dashboard og push-varsler
 
 ### Grafana (dashboard)
