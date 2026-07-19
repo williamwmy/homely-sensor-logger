@@ -6,7 +6,8 @@
 #       ./deploy.sh bruker@annen-host  (overstyr, f.eks. Tailscale-navn)
 set -euo pipefail
 
-HOST="${1:-azureuser@20.100.170.188}"
+# SSH går via Tailscale (port 22 er stengt offentlig) — Mac-en må være i tailnettet.
+HOST="${1:-azureuser@homely-logger-vm}"
 
 echo "Deployer til $HOST ..."
 ssh "$HOST" '

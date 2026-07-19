@@ -20,8 +20,10 @@ bygger et permanent, spørrbart eventlager.
   i selve appen. (Tailscale og ntfy er også plattformnøytrale.)
 - Infrastruktur som kode med Terraform (azurerm-provider, remote state i
   Azure Storage).
-- Tilgang: kun SSH (port 22, én IP) er åpen i NSG-en. Grafana (port 3000)
-  eksponeres aldri offentlig — nås via Tailscale (VM og mobil i samme tailnet).
+- Tilgang: **ingen åpne porter i NSG-en.** SSH og Grafana går via Tailscale
+  (VM, mobil og Mac i samme tailnet). Ved førstegangsoppsett av en fersk VM
+  åpnes port 22 midlertidig med az-kommandoen i `infra/terraform.tfvars.example`;
+  neste `terraform apply` fjerner den automatisk.
 
 ## Homely-API
 Read-only beta-API. Ingen offentlig dokumentasjon; strukturen under er verifisert

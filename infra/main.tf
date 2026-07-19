@@ -49,17 +49,10 @@ resource "azurerm_network_security_group" "main" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
 
-  security_rule {
-    name                       = "ssh-from-allowed-ip"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = var.allowed_ssh_cidr
-    destination_address_prefix = "*"
-  }
+  # Ingen åpne porter — SSH går via Tailscale. Tom liste er eksplisitt med
+  # vilje: den fjerner også regler lagt til utenfor Terraform, som den
+  # midlertidige bootstrap-regelen (se terraform.tfvars.example).
+  security_rule = []
 }
 
 resource "azurerm_subnet_network_security_group_association" "main" {

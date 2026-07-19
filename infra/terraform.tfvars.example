@@ -1,7 +1,15 @@
 # Kopier til terraform.tfvars og fyll inn. terraform.tfvars er git-ignorert.
 
-# Din offentlige IP med /32-suffiks. Finn den med: curl -4 ifconfig.me
-allowed_ssh_cidr = "203.0.113.7/32"
+# Innholdet i din offentlige SSH-nøkkel (RSA — Azure avviser ed25519)
+ssh_public_key = "ssh-rsa AAAA... deg@maskin"
 
-# Innholdet i din offentlige SSH-nøkkel, f.eks. ~/.ssh/id_ed25519.pub
-ssh_public_key = "ssh-ed25519 AAAA... deg@maskin"
+# Port 22 er stengt — SSH går via Tailscale. Ved førstegangsoppsett av en
+# fersk VM (før Tailscale er satt opp der) åpnes den midlertidig med:
+#
+#   az network nsg rule create -g homely-logger-rg --nsg-name homely-logger-nsg \
+#     -n bootstrap-ssh --priority 100 --direction Inbound --access Allow \
+#     --protocol Tcp --destination-port-ranges 22 \
+#     --source-address-prefixes "$(curl -4 -s ifconfig.me)/32"
+#
+# Neste `terraform apply` fjerner regelen automatisk (NSG-en er definert med
+# tom regel-liste), så opprydding skjer av seg selv.

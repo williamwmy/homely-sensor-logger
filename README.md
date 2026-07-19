@@ -20,10 +20,15 @@ Krever Terraform og en aktiv `az login`-sesjon (f.eks. Azure Cloud Shell).
 ```bash
 cd infra
 ./bootstrap-state.sh                           # engangs: storage for remote state
-cp terraform.tfvars.example terraform.tfvars   # fyll inn IP og SSH-nøkkel
+cp terraform.tfvars.example terraform.tfvars   # fyll inn SSH-nøkkel
 terraform init
 terraform apply
 ```
+
+VM-en har ingen åpne porter — all tilgang (SSH og Grafana) går via Tailscale.
+Ved førstegangsoppsett: åpne port 22 midlertidig med az-kommandoen i
+`terraform.tfvars.example`, sett opp Tailscale på VM-en, og kjør
+`terraform apply` igjen (fjerner regelen automatisk).
 
 Terraform-staten lagres i en Azure Storage-konto (`azurerm`-backend), så den
 følger Azure-kontoen din og ikke maskinen du kjører fra.
@@ -36,7 +41,7 @@ SSH inn på VM-en (cloud-init har allerede installert Docker — gi den et par
 minutter etter første oppstart):
 
 ```bash
-ssh azureuser@<public_ip>
+ssh azureuser@homely-logger-vm   # via Tailscale (public IP ved førstegangsoppsett)
 git clone <repo-url>
 cd homely-sensor-logger/app
 cp .env.example .env   # fyll inn Homely-innlogging og Postgres-passord

@@ -4,6 +4,6 @@ output "public_ip" {
 }
 
 output "ssh_command" {
-  description = "Ferdig SSH-kommando."
-  value       = "ssh ${var.admin_username}@${azurerm_public_ip.main.ip_address}"
+  description = "Ferdig SSH-kommando (via Tailscale — port 22 er stengt offentlig)."
+  value       = "ssh ${var.admin_username}@homely-logger-vm"
 }
