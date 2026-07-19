@@ -6,16 +6,42 @@
   "time": { "from": "now-24h", "to": "now" },
   "panels": [
     {
-      "id": 10,
+      "id": 20,
       "type": "table",
-      "title": "Inngangsdør",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "title": "Alle dører nå",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = 'Inngangsdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT * FROM (SELECT DISTINCT ON (device_id) trim(device_name) AS \"dør\", CASE WHEN trim(device_name) = 'Bevegelsessensor' THEN (CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\", to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI') AS \"siden\" FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY device_id, last_updated DESC) s ORDER BY \"dør\""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "status" },
+            "properties": [
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Bevegelse": { "color": "red", "index": 1 }, "Lukket": { "color": "green", "index": 2 }, "Rolig": { "color": "green", "index": 3 } } }] },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Inngangsdør",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Inngangsdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -35,13 +61,13 @@
       "id": 11,
       "type": "table",
       "title": "Verandadør",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 8 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = 'Verandadør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Verandadør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -61,13 +87,13 @@
       "id": 12,
       "type": "table",
       "title": "2. etg Balkongdør",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 7 },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 15 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = '2. etg Balkongdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = '2. etg Balkongdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -87,13 +113,13 @@
       "id": 13,
       "type": "table",
       "title": "Takterassedør",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 7 },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 15 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = 'Takterassedør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Takterassedør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -113,13 +139,13 @@
       "id": 14,
       "type": "table",
       "title": "Kontor balkong dør",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 14 },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 22 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = 'Kontor balkong dør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Kontor balkong dør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -139,13 +165,13 @@
       "id": 15,
       "type": "table",
       "title": "Bevegelsessensor",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 14 },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 22 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END AS \"status\" FROM events WHERE device_name = 'Bevegelsessensor' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END AS \"status\" FROM events WHERE trim(device_name) = 'Bevegelsessensor' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -165,7 +191,7 @@
       "id": 1,
       "type": "state-timeline",
       "title": "Dører og bevegelse — tidslinje",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 21 },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 29 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
@@ -190,7 +216,7 @@
       "id": 2,
       "type": "timeseries",
       "title": "Temperatur per sensor",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 30 },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 38 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
@@ -211,7 +237,7 @@
       "id": 3,
       "type": "table",
       "title": "Siste 50 events",
-      "gridPos": { "h": 10, "w": 14, "x": 0, "y": 39 },
+      "gridPos": { "h": 10, "w": 14, "x": 0, "y": 47 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
@@ -226,7 +252,7 @@
       "id": 4,
       "type": "table",
       "title": "Events per sensor siste 7 dager",
-      "gridPos": { "h": 10, "w": 5, "x": 14, "y": 39 },
+      "gridPos": { "h": 10, "w": 5, "x": 14, "y": 47 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
@@ -241,7 +267,7 @@
       "id": 5,
       "type": "table",
       "title": "Batteristatus (siste per sensor)",
-      "gridPos": { "h": 10, "w": 5, "x": 19, "y": 39 },
+      "gridPos": { "h": 10, "w": 5, "x": 19, "y": 47 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {

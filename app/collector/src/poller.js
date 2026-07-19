@@ -16,7 +16,9 @@ export function startPoller({ client, state, ingest, locationId, intervalMs }) {
         let inserted = 0;
 
         for (const device of home.devices ?? []) {
-          state.deviceNames.set(device.id, device.name);
+          // Homely-appen tillater etterhengende mellomrom i navn — trim, ellers
+          // feiler eksakt-match i Grafana og notifier-ignorelisten.
+          state.deviceNames.set(device.id, device.name?.trim() || null);
 
           for (const [feature, featureData] of Object.entries(device.features ?? {})) {
             for (const [stateName, stateData] of Object.entries(featureData?.states ?? {})) {

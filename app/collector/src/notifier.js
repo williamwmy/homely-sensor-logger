@@ -25,10 +25,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Returnerer null hvis eventen ikke skal varsles.
 function ruleFor(evt) {
-  const name = evt.device_name ?? evt.device_id;
+  const name = evt.device_name?.trim() || evt.device_id;
 
   if (evt.feature === 'alarm' && evt.state_name === 'alarm') {
-    if (IGNORE_DEVICES.includes(evt.device_name)) return null;
+    if (IGNORE_DEVICES.includes(name)) return null;
     return {
       topic: 'dor',
       title: name,
