@@ -65,9 +65,9 @@ Event `device-state-changed` har `data` med `deviceId`, `gatewayId`,
 ### VIKTIG: websocket alene er ikke nok
 I flere oppsett streames bare et delsett av features (typisk temperatur og
 nettverkstilkobling), ikke alle dør- og bevegelses-events. Derfor MÅ collectoren
-også polle `GET /homely/home/<locationId>` jevnlig (default hvert 15. minutt —
-Homelys rate-limiter tåler målt bare ~4 home-kall i timen; både 2 og 10
-minutters polling ga jevnlig HTTP 429),
+også polle `GET /homely/home/<locationId>` jevnlig (default hvert 20. minutt —
+Homelys rate-limiter er stram og noe uforutsigbar: 2, 10 og 15 minutters
+polling ga alle jevnlig HTTP 429),
 sammenligne `lastUpdated`-timestamps mot sist lagrede verdi per
 (device, feature, state), og skrive inn endringer websocketen bommet på.
 Polling er en kjernefunksjon, ikke en reserve. Websocketen faller også ut
