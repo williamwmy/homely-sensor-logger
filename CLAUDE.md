@@ -14,6 +14,8 @@ bygger et permanent, spørrbart eventlager.
     nye rader via LISTEN/NOTIFY og sender push-varsler til ntfy
   - `grafana` — dashboard, provisjonert fra `app/grafana/` (datasource +
     dashboard som kode)
+  - `met` — værpoller mot MET/Frost-API-et (utetemp, globalstråling, vind,
+    nedbør → source='met', eget dashboard). Sover uten `FROST_CLIENT_ID`.
 - All config i `.env`. Ingen hemmeligheter i koden eller i git.
 - Bevisst flyttbart: samme compose skal kunne kjøre uendret på en Raspberry Pi
   eller VPS hvis Azure-kreditten forsvinner. Ingen Azure-spesifikke avhengigheter

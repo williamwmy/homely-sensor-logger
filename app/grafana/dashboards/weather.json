@@ -1,0 +1,101 @@
+{
+  "uid": "homely-weather",
+  "title": "Vær — MET vs. inneklima",
+  "timezone": "browser",
+  "refresh": "5m",
+  "time": { "from": "now-48h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Ute vs. inne (°C)",
+      "gridPos": { "h": 11, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT last_updated AS \"time\", 'Ute' AS metric, (value::text)::float AS temp FROM events WHERE feature = 'weather' AND state_name = 'air_temperature' AND $__timeFilter(last_updated) ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "format": "time_series",
+          "rawSql": "SELECT last_updated AS \"time\", COALESCE(device_name, device_id) AS metric, (value::text)::float AS temp FROM events WHERE feature = 'temperature' AND state_name = 'temperature' AND $__timeFilter(last_updated) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "spanNulls": true, "lineInterpolation": "stepAfter", "lineWidth": 1 }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Ute" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "light-blue" } },
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 8] } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Sol, vind og nedbør",
+      "gridPos": { "h": 11, "w": 24, "x": 0, "y": 11 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT last_updated AS \"time\", 'Sol (W/m²)' AS metric, (value::text)::float AS v FROM events WHERE feature = 'weather' AND state_name = 'global_radiation' AND $__timeFilter(last_updated) ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "format": "time_series",
+          "rawSql": "SELECT last_updated AS \"time\", 'Vind (m/s)' AS metric, (value::text)::float AS v FROM events WHERE feature = 'weather' AND state_name = 'wind_speed' AND $__timeFilter(last_updated) ORDER BY 1"
+        },
+        {
+          "refId": "C",
+          "format": "time_series",
+          "rawSql": "SELECT last_updated AS \"time\", 'Nedbør (mm/t)' AS metric, (value::text)::float AS v FROM events WHERE feature = 'weather' AND state_name = 'precipitation' AND $__timeFilter(last_updated) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "spanNulls": true, "lineInterpolation": "stepAfter" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Sol (W/m²)" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } },
+              { "id": "custom.fillOpacity", "value": 30 },
+              { "id": "custom.axisPlacement", "value": "left" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Vind (m/s)" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "light-blue" } },
+              { "id": "custom.axisPlacement", "value": "right" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Nedbør (mm/t)" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } },
+              { "id": "custom.drawStyle", "value": "bars" },
+              { "id": "custom.fillOpacity", "value": 60 },
+              { "id": "custom.axisPlacement", "value": "right" }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}

@@ -63,6 +63,24 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
 
+  met:
+    build: ./collector
+    command: ["node", "src/met.js"]
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FROST_CLIENT_ID: ${FROST_CLIENT_ID:-}
+      MET_STATION_ID: ${MET_STATION_ID:-SN18700}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+
   grafana:
     image: grafana/grafana-oss:latest
     restart: unless-stopped

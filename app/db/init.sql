@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS events (
   state_name   text        NOT NULL,
   value        jsonb,
   last_updated timestamptz NOT NULL,
-  source       text        NOT NULL CHECK (source IN ('websocket', 'poll')),
+  source       text        NOT NULL CHECK (source IN ('websocket', 'poll', 'met')),
 
   -- Websocket og polling overlapper; samme endring skal bare lagres én gang.
   CONSTRAINT events_change_unique UNIQUE (device_id, feature, state_name, last_updated)
