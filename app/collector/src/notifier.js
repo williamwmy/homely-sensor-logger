@@ -74,16 +74,22 @@ function ruleFor(evt) {
   return null;
 }
 
+// JSON-publisering (POST til rot-URL-en) i stedet for header-basert: HTTP-
+// headere er ASCII-only, så æøå i Title blir mojibake. I JSON-kroppen er alt
+// UTF-8. NB: i JSON-modus er priority et tall og tags et array.
+const PRIORITY_NUM = { min: 1, low: 2, default: 3, high: 4, urgent: 5 };
+
 async function send(rule) {
-  const url = `${NTFY_BASE_URL}/homely-${TOPIC_SECRET}-${rule.topic}`;
-  const res = await fetch(url, {
+  const res = await fetch(NTFY_BASE_URL, {
     method: 'POST',
-    headers: {
-      Title: rule.title,
-      Priority: rule.priority,
-      Tags: rule.tags,
-    },
-    body: rule.message,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      topic: `homely-${TOPIC_SECRET}-${rule.topic}`,
+      title: rule.title,
+      message: rule.message,
+      priority: PRIORITY_NUM[rule.priority] ?? 3,
+      tags: rule.tags.split(','),
+    }),
   });
   if (!res.ok) {
     throw new Error(`ntfy svarte HTTP ${res.status}`);
