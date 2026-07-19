@@ -4,7 +4,9 @@ Logger alle sensor-triggere fra Homely-alarmsystemet til Postgres, slik at hele
 historikken bevares — Homely-appen viser bare siste aktivitet.
 
 - `infra/` — Terraform for en liten Ubuntu-VM i Azure (Norway East) med Docker.
-- `app/` — Docker Compose med `collector` (Node) og `db` (Postgres 16).
+- `app/` — Docker Compose med fire tjenester: `collector` (Node, websocket +
+  polling mot Homely), `db` (Postgres 16), `notifier` (push-varsler via ntfy)
+  og `grafana` (dashboard).
 
 Appen har ingen Azure-avhengigheter og kan flyttes rett over på en Raspberry Pi
 eller VPS: kopier `app/`-mappen, sett opp `.env`, kjør `docker compose up -d`.
@@ -44,19 +46,41 @@ docker compose logs -f collector   # sjekk at den logger inn og kobler til
 
 ## Mobil: dashboard og push-varsler
 
-- **Grafana** (dashboard): kjører på VM-en, port 3000 — bevisst ikke åpnet i
-  NSG-en. Nås via [Tailscale](https://tailscale.com): installer på VM-en
-  (`curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`) og
-  på mobilen, logg inn på samme konto, og åpne `http://<vm-tailscale-navn>:3000`.
-  Innlogging: `admin` + `GRAFANA_ADMIN_PASSWORD` fra `.env`.
-- **Push-varsler** (ntfy): `notifier`-tjenesten lytter på nye events i Postgres
-  og sender til ntfy-topics. Installer [ntfy-appen](https://ntfy.sh) og abonner på:
-  - `homely-<NTFY_TOPIC_SECRET>-dor` — dører åpnes/lukkes
-  - `homely-<NTFY_TOPIC_SECRET>-sikkerhet` — røyk/brann og sabotasje
-  - `homely-<NTFY_TOPIC_SECRET>-batteri` — lavt batteri
+### Grafana (dashboard)
 
-  Topic-navnene er hemmeligheten — del dem ikke. Hvilke devices som ikke skal
-  varsle styres med `NOTIFY_IGNORE_DEVICES` i `.env`.
+Kjører på VM-en, port 3000 — bevisst ikke åpnet i NSG-en, nås kun via
+[Tailscale](https://tailscale.com) (gratis):
+
+1. På VM-en: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`
+   — kommandoen skriver ut en innloggings-URL. Åpne den i nettleseren, logg inn
+   og godkjenn («Connect») at maskinen legges til i tailnettet ditt.
+2. Installer Tailscale-appen på mobilen og logg inn på samme konto.
+3. Åpne `http://homely-logger-vm:3000` (eller Tailscale-IP-en fra
+   `tailscale ip -4`). Innlogging: `admin` + `GRAFANA_ADMIN_PASSWORD` fra `.env`.
+
+Dashboardet «Homely Sensor Logger» provisjoneres automatisk fra
+`app/grafana/dashboards/` — endringer der følger git, ikke klikking i UI-et.
+
+### Push-varsler (ntfy)
+
+`notifier`-tjenesten lytter på nye events i Postgres (LISTEN/NOTIFY) og sender
+til [ntfy](https://ntfy.sh)-topics. Sett `NTFY_TOPIC_SECRET` i `.env`
+(generer med `openssl rand -hex 16`), installer ntfy-appen og abonner på:
+
+- `homely-<NTFY_TOPIC_SECRET>-dor` — dører åpnes/lukkes
+- `homely-<NTFY_TOPIC_SECRET>-sikkerhet` — røyk/brann og sabotasje (høy prioritet)
+- `homely-<NTFY_TOPIC_SECRET>-batteri` — lavt batteri
+
+Topic-navnene er hemmeligheten — del dem ikke (alle som kjenner navnet kan lese
+varslene på ntfy.sh). Devices som ikke skal gi dørvarsler styres med
+`NOTIFY_IGNORE_DEVICES` i `.env` (default: Bevegelsessensor). Events eldre enn
+`NOTIFY_MAX_AGE_SECONDS` varsles aldri, så poll-etterslep etter nedetid ikke
+gir varselflom.
+
+**Oppgraderer du en eksisterende installasjon** (Postgres-volum fra før
+notifier/Grafana fantes): init-scriptene i `app/db/` kjører kun på ferske
+volumer, så pg_notify-triggeren og `grafana_reader`-rollen må legges inn
+manuelt med `docker compose exec db psql -U homely homely` (se `app/db/`).
 
 ## Eksempel-spørringer
 

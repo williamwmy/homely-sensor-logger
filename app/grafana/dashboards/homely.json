@@ -15,7 +15,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT last_updated AS \"time\", device_name AS metric, CASE WHEN value::text = 'true' THEN 1 ELSE 0 END AS state FROM events WHERE feature = 'alarm' AND state_name = 'alarm' AND $__timeFilter(last_updated) ORDER BY 1"
+          "rawSql": "SELECT last_updated AS \"time\", COALESCE(device_name, device_id) AS metric, CASE WHEN value::text = 'true' THEN 1 ELSE 0 END AS state FROM events WHERE feature = 'alarm' AND state_name = 'alarm' AND $__timeFilter(last_updated) ORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -40,7 +40,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT last_updated AS \"time\", device_name AS metric, (value::text)::float AS temperatur FROM events WHERE feature = 'temperature' AND state_name = 'temperature' AND $__timeFilter(last_updated) ORDER BY 1"
+          "rawSql": "SELECT last_updated AS \"time\", COALESCE(device_name, device_id) AS metric, (value::text)::float AS temperatur FROM events WHERE feature = 'temperature' AND state_name = 'temperature' AND $__timeFilter(last_updated) ORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -61,7 +61,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT last_updated AS \"tid\", device_name AS \"device\", feature, state_name AS \"state\", value::text AS \"verdi\", source AS \"kilde\" FROM events ORDER BY last_updated DESC LIMIT 50"
+          "rawSql": "SELECT last_updated AS \"tid\", COALESCE(device_name, device_id) AS \"device\", feature, state_name AS \"state\", value::text AS \"verdi\", source AS \"kilde\" FROM events ORDER BY last_updated DESC LIMIT 50"
         }
       ],
       "fieldConfig": { "defaults": {}, "overrides": [] }
@@ -76,7 +76,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT device_name AS \"device\", count(*) AS \"antall\" FROM events WHERE last_updated > now() - interval '7 days' GROUP BY 1 ORDER BY 2 DESC"
+          "rawSql": "SELECT COALESCE(device_name, device_id) AS \"device\", count(*) AS \"antall\" FROM events WHERE last_updated > now() - interval '7 days' GROUP BY 1 ORDER BY 2 DESC"
         }
       ],
       "fieldConfig": { "defaults": {}, "overrides": [] }
@@ -91,7 +91,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT DISTINCT ON (device_id, state_name) device_name AS \"device\", state_name AS \"state\", value::text AS \"verdi\" FROM events WHERE feature = 'battery' ORDER BY device_id, state_name, last_updated DESC"
+          "rawSql": "SELECT DISTINCT ON (device_id, state_name) COALESCE(device_name, device_id) AS \"device\", state_name AS \"state\", value::text AS \"verdi\" FROM events WHERE feature = 'battery' ORDER BY device_id, state_name, last_updated DESC"
         }
       ],
       "fieldConfig": { "defaults": {}, "overrides": [] }

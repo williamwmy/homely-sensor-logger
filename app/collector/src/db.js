@@ -38,6 +38,19 @@ export async function insertEvent({ deviceId, deviceName, feature, stateName, va
   return res.rowCount > 0;
 }
 
+// Sist kjente navn per device, så websocket-events rett etter en restart får
+// navn selv om første poll lar vente på seg (f.eks. ved rate-limit). Uten
+// dette lagres de med device_name NULL.
+export async function loadDeviceNames() {
+  const res = await pool.query(`
+    SELECT DISTINCT ON (device_id) device_id, device_name
+    FROM events
+    WHERE device_name IS NOT NULL
+    ORDER BY device_id, last_updated DESC
+  `);
+  return new Map(res.rows.map((row) => [row.device_id, row.device_name]));
+}
+
 // Siste kjente endringstidspunkt per (device, feature, state), så en restart
 // ikke behandler hele nå-tilstanden som nye events.
 export async function loadLastSeen() {

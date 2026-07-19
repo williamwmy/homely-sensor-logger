@@ -1,7 +1,7 @@
 import { config } from './config.js';
 import { log } from './logger.js';
 import { HomelyClient } from './homely.js';
-import { pool, waitForDb, loadLastSeen } from './db.js';
+import { pool, waitForDb, loadLastSeen, loadDeviceNames } from './db.js';
 import { createState, createIngest } from './ingest.js';
 import { startPoller } from './poller.js';
 import { startSocket } from './socket.js';
@@ -16,6 +16,7 @@ async function main() {
 
   const state = createState();
   state.lastSeen = await loadLastSeen();
+  state.deviceNames = await loadDeviceNames();
   const ingest = createIngest(state);
 
   const locations = await client.locations();

@@ -7,12 +7,21 @@ bygger et permanent, spørrbart eventlager.
 
 ## Arkitektur
 - Én liten Linux-VM (Ubuntu) i Azure, Norway East, på MSDN-kreditt.
-- Docker Compose med to tjenester: `collector` og `db` (Postgres).
+- Docker Compose med fire tjenester:
+  - `collector` — Node; websocket + polling mot Homely, skriver til Postgres
+  - `db` — Postgres 16, append-only `events`-tabell
+  - `notifier` — Node (samme image som collector, annen kommando); lytter på
+    nye rader via LISTEN/NOTIFY og sender push-varsler til ntfy
+  - `grafana` — dashboard, provisjonert fra `app/grafana/` (datasource +
+    dashboard som kode)
 - All config i `.env`. Ingen hemmeligheter i koden eller i git.
 - Bevisst flyttbart: samme compose skal kunne kjøre uendret på en Raspberry Pi
   eller VPS hvis Azure-kreditten forsvinner. Ingen Azure-spesifikke avhengigheter
-  i selve appen.
-- Infrastruktur som kode med Terraform (azurerm-provider).
+  i selve appen. (Tailscale og ntfy er også plattformnøytrale.)
+- Infrastruktur som kode med Terraform (azurerm-provider, remote state i
+  Azure Storage).
+- Tilgang: kun SSH (port 22, én IP) er åpen i NSG-en. Grafana (port 3000)
+  eksponeres aldri offentlig — nås via Tailscale (VM og mobil i samme tailnet).
 
 ## Homely-API
 Read-only beta-API. Ingen offentlig dokumentasjon; strukturen under er verifisert
@@ -78,14 +87,41 @@ Websocket og polling vil overlappe. Gjør en rad unik på
 (device_id, feature, state_name, last_updated) med en unik constraint, og bruk
 `INSERT ... ON CONFLICT DO NOTHING` så samme endring ikke logges to ganger.
 
+I tillegg til tabellen:
+- Trigger `events_notify` (AFTER INSERT) gjør `pg_notify('events_channel',
+  row_to_json(NEW))` — notifier-tjenesten lytter på denne kanalen.
+- Egen leserolle `grafana_reader` (kun SELECT på `events`) for Grafana.
+- NB: init-scriptene i `app/db/` kjører kun på ferskt Postgres-volum. Endringer
+  i skjemaet må også migreres manuelt inn i en kjørende database med
+  `docker compose exec db psql`.
+
+## Innsyn og varsler
+- **Grafana** (`app/grafana/`): datasource og dashboard provisjoneres som kode.
+  Innlogging admin + `GRAFANA_ADMIN_PASSWORD`. Nås kun via Tailscale:
+  `http://homely-logger-vm:3000`.
+- **Push** (`app/collector/src/notifier.js`): ntfy.sh med hemmelige topic-navn
+  `homely-<NTFY_TOPIC_SECRET>-{dor,sikkerhet,batteri}`. Regler:
+  - dør (feature=alarm, state=alarm, value true=åpnet/false=lukket) → `-dor`;
+    devices i `NOTIFY_IGNORE_DEVICES` (default Bevegelsessensor) varsles ikke
+  - fire → `-sikkerhet` (priority urgent); tamper → `-sikkerhet` (high)
+  - battery low/defect → `-batteri` (low)
+  - Stale-vern: events med `last_updated` eldre enn `NOTIFY_MAX_AGE_SECONDS`
+    (default 900) varsles aldri — hindrer varselflom når polling tar igjen
+    etterslep etter nedetid. ntfy.sh ser varselinnholdet (bevisst valg);
+    self-hosting av ntfy er exit-strategien hvis det blir et problem.
+- **Homely rate-limiter** `/homely/home` (HTTP 429) ved hyppige kall — typisk
+  utløst av mange restarter/manuelle kall på kort tid, ikke av normal
+  2-minutters-polling. Polleren håndterer det med eksponentiell backoff
+  (dobling per 429, maks 15 min). 429 gir forsinkelse, aldri datatap.
+
 ## Konvensjoner
 - Språk: Node (JavaScript eller TypeScript). `socket.io-client` for streaming
   (offisiell klient, håndterer EIO=4, handshake, ping/pong og reconnect),
   `undici`/`fetch` for REST, `pg` for Postgres.
   Homely-serveren er selv Socket.IO, så socket.io-client er hjemmebane og skjuler
   protokoll-detaljene. Den udokumenterte query-param-autentiseringen settes via
-  `io(url, { query: { token: "Bearer <JWT>", location: "<locationId>" },
-  transports: ["websocket"] })`.
+  `io(url, { query: { token: "Bearer <JWT>", locationId: "<locationId>" },
+  transports: ["websocket"] })` (se NB om parameternavnet under Streaming).
 - Websocket-lytter og polling-loop kjører parallelt (to async-funksjoner i samme
   prosess). Begge skriver til samme `events`-tabell via samme insert-funksjon.
 - Merk: referanseimplementasjonen hansrune/homely-tools er i Python. Bruk den som
@@ -95,7 +131,7 @@ Websocket og polling vil overlappe. Gjør en rad unik på
 - Ingen hemmeligheter i git. `.env` i `.gitignore`, med `.env.example` som mal.
 - Strukturert logging til stdout (Docker fanger det). Logg hver insert på
   debug-nivå, hver reconnect/feil på info/warn.
-- `restart: unless-stopped` på begge containere.
+- `restart: unless-stopped` på alle containere.
 - Postgres-data i et navngitt Docker-volume så det overlever restart.
 
 ## Referanser (de facto-dokumentasjon)
