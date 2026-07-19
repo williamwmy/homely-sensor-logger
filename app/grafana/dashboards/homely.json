@@ -6,10 +6,166 @@
   "time": { "from": "now-24h", "to": "now" },
   "panels": [
     {
+      "id": 10,
+      "type": "table",
+      "title": "Inngangsdør",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = 'Inngangsdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "status" },
+            "properties": [
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Verandadør",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = 'Verandadør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "status" },
+            "properties": [
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "type": "table",
+      "title": "2. etg Balkongdør",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 7 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = '2. etg Balkongdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "status" },
+            "properties": [
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "type": "table",
+      "title": "Takterassedør",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 7 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = 'Takterassedør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "status" },
+            "properties": [
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "type": "table",
+      "title": "Kontor balkong dør",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 14 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE device_name = 'Kontor balkong dør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "status" },
+            "properties": [
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 15,
+      "type": "table",
+      "title": "Bevegelsessensor",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END AS \"status\" FROM events WHERE device_name = 'Bevegelsessensor' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "status" },
+            "properties": [
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Bevegelse": { "color": "red", "index": 0 }, "Rolig": { "color": "green", "index": 1 } } }] },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "id": 1,
       "type": "state-timeline",
-      "title": "Dører og bevegelse (åpen/utløst = rød)",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+      "title": "Dører og bevegelse — tidslinje",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 21 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
@@ -34,7 +190,7 @@
       "id": 2,
       "type": "timeseries",
       "title": "Temperatur per sensor",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 9 },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 30 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
@@ -55,7 +211,7 @@
       "id": 3,
       "type": "table",
       "title": "Siste 50 events",
-      "gridPos": { "h": 10, "w": 14, "x": 0, "y": 18 },
+      "gridPos": { "h": 10, "w": 14, "x": 0, "y": 39 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
@@ -70,7 +226,7 @@
       "id": 4,
       "type": "table",
       "title": "Events per sensor siste 7 dager",
-      "gridPos": { "h": 10, "w": 5, "x": 14, "y": 18 },
+      "gridPos": { "h": 10, "w": 5, "x": 14, "y": 39 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
@@ -85,7 +241,7 @@
       "id": 5,
       "type": "table",
       "title": "Batteristatus (siste per sensor)",
-      "gridPos": { "h": 10, "w": 5, "x": 19, "y": 18 },
+      "gridPos": { "h": 10, "w": 5, "x": 19, "y": 39 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
@@ -98,5 +254,5 @@
     }
   ],
   "schemaVersion": 39,
-  "version": 1
+  "version": 2
 }
