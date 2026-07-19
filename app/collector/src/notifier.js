@@ -2,6 +2,7 @@
 // Postgres LISTEN/NOTIFY og sender push-varsler til ntfy for utvalgte
 // hendelser. Kjører uavhengig av collectoren.
 import pg from 'pg';
+import { pool } from './db.js';
 import { log } from './logger.js';
 
 function required(name) {
@@ -20,6 +21,8 @@ const IGNORE_DEVICES = (process.env.NOTIFY_IGNORE_DEVICES ?? '')
   .map((s) => s.trim())
   .filter(Boolean);
 const MAX_AGE_MS = parseInt(process.env.NOTIFY_MAX_AGE_SECONDS ?? '900', 10) * 1000;
+// Time på døgnet (Europe/Oslo, 0–23) for daglig hjertebank-varsel. Tom = av.
+const HEARTBEAT_HOUR = parseInt(process.env.HEARTBEAT_HOUR ?? '8', 10);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -107,6 +110,48 @@ async function handle(evt) {
   }
 }
 
+// Daglig hjertebank: et lite statusvarsel hver morgen. Verdien ligger like mye
+// i fraværet — uteblir meldingen, er noe galt (VM nede, collector død, ntfy
+// utilgjengelig). Stillhet skal aldri kunne forveksles med «rolig hus».
+async function sendHeartbeat() {
+  const res = await pool.query(`
+    SELECT count(*) AS antall,
+           count(DISTINCT device_id) AS sensorer,
+           to_char(max(last_updated) AT TIME ZONE 'Europe/Oslo', 'HH24:MI') AS siste
+    FROM events
+    WHERE last_updated > now() - interval '24 hours'
+  `);
+  const { antall, sensorer, siste } = res.rows[0];
+  await send({
+    topic: 'status',
+    title: 'Homely-logger',
+    message:
+      `Alt i orden: ${antall} events fra ${sensorer} sensorer siste døgn` +
+      (siste ? ` (siste ${siste})` : ''),
+    priority: 'min',
+    tags: 'white_check_mark',
+  });
+  log.info('hjertebank sendt', { antall, sensorer });
+}
+
+function startHeartbeat() {
+  if (!Number.isInteger(HEARTBEAT_HOUR) || HEARTBEAT_HOUR < 0 || HEARTBEAT_HOUR > 23) {
+    log.info('hjertebank deaktivert (HEARTBEAT_HOUR ikke satt til 0–23)');
+    return;
+  }
+  let lastSentDate = null;
+  setInterval(() => {
+    // sv-SE gir ISO-aktig format: "2026-07-19 08:00:12"
+    const oslo = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Oslo' });
+    const [date, time] = oslo.split(' ');
+    if (parseInt(time.slice(0, 2), 10) === HEARTBEAT_HOUR && lastSentDate !== date) {
+      lastSentDate = date;
+      sendHeartbeat().catch((err) => log.warn('hjertebank feilet', { error: String(err) }));
+    }
+  }, 60_000);
+  log.info('hjertebank aktivert', { hourOslo: HEARTBEAT_HOUR });
+}
+
 // Dedikert tilkobling (ikke pool) — LISTEN er knyttet til én sesjon.
 // Mister vi den, kobler vi til igjen med backoff; ingen events går tapt i
 // databasen uansett, vi mister bare varsler i nedetiden.
@@ -116,6 +161,8 @@ async function run() {
     ignoreDevices: IGNORE_DEVICES,
     maxAgeSeconds: MAX_AGE_MS / 1000,
   });
+
+  startHeartbeat();
 
   let delayMs = 1000;
   for (;;) {

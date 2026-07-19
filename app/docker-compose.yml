@@ -1,7 +1,15 @@
+# Uten tak vokser container-loggene til de spiser disken.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -19,6 +27,7 @@ services:
   collector:
     build: ./collector
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +46,7 @@ services:
     build: ./collector
     command: ["node", "src/notifier.js"]
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       db:
         condition: service_healthy
@@ -45,6 +55,7 @@ services:
       NTFY_TOPIC_SECRET: ${NTFY_TOPIC_SECRET}
       NOTIFY_IGNORE_DEVICES: ${NOTIFY_IGNORE_DEVICES:-}
       NOTIFY_MAX_AGE_SECONDS: ${NOTIFY_MAX_AGE_SECONDS:-900}
+      HEARTBEAT_HOUR: ${HEARTBEAT_HOUR:-8}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       PGHOST: db
       PGPORT: "5432"
@@ -55,6 +66,7 @@ services:
   grafana:
     image: grafana/grafana-oss:latest
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       db:
         condition: service_healthy

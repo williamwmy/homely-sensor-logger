@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Deployer siste commit fra GitHub til VM-en og bygger containerne på nytt.
+# Husk å committe og pushe først — scriptet deployer det som ligger på GitHub.
+#
+# Bruk: ./deploy.sh                    (default host)
+#       ./deploy.sh bruker@annen-host  (overstyr, f.eks. Tailscale-navn)
+set -euo pipefail
+
+HOST="${1:-azureuser@20.100.170.188}"
+
+echo "Deployer til $HOST ..."
+ssh "$HOST" '
+  set -e
+  cd homely-sensor-logger
+  git pull
+  cd app
+  docker compose up -d --build
+  echo
+  docker compose ps --format "table {{.Name}}\t{{.Status}}"
+'
+echo "Ferdig."

@@ -44,6 +44,12 @@ docker compose up -d
 docker compose logs -f collector   # sjekk at den logger inn og kobler til
 ```
 
+Senere deployer (etter `git push`) gjøres fra din egen maskin med:
+
+```bash
+./deploy.sh   # ssh + git pull + docker compose up -d --build på VM-en
+```
+
 ## Mobil: dashboard og push-varsler
 
 ### Grafana (dashboard)
@@ -70,6 +76,8 @@ til [ntfy](https://ntfy.sh)-topics. Sett `NTFY_TOPIC_SECRET` i `.env`
 - `homely-<NTFY_TOPIC_SECRET>-dor` — dører åpnes/lukkes
 - `homely-<NTFY_TOPIC_SECRET>-sikkerhet` — røyk/brann og sabotasje (høy prioritet)
 - `homely-<NTFY_TOPIC_SECRET>-batteri` — lavt batteri
+- `homely-<NTFY_TOPIC_SECRET>-status` — daglig hjertebank (kl. `HEARTBEAT_HOUR`,
+  default 08). **Uteblir denne, er noe nede** — det er hele poenget med den.
 
 Topic-navnene er hemmeligheten — del dem ikke (alle som kjenner navnet kan lese
 varslene på ntfy.sh). Devices som ikke skal gi dørvarsler styres med
