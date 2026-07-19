@@ -17,6 +17,11 @@ const STATIONS = (process.env.MET_STATION_ID || 'SN18210,SN18700')
   .map((s) => s.trim())
   .filter(Boolean);
 const INTERVAL_MS = 30 * 60 * 1000;
+// Hvor langt bakover hver henting ser. Default 12 t (fanger MET-etterslep);
+// settes høyere for historisk backfill, gjerne sammen med MET_ONESHOT=1
+// for å kjøre én henting og avslutte.
+const LOOKBACK_HOURS = parseInt(process.env.MET_LOOKBACK_HOURS ?? '12', 10);
+const ONESHOT = process.env.MET_ONESHOT === '1';
 const FROST = 'https://frost.met.no';
 
 // Frost-element → state_name i events-tabellen
@@ -49,10 +54,10 @@ async function stationNames() {
 }
 
 async function fetchObservations() {
-  // 12 timers vindu bakover: Frost-observasjoner kan komme med etterslep,
-  // og unik-constrainten deduper overlappen gratis.
+  // Vindu bakover: Frost-observasjoner kan komme med etterslep, og
+  // unik-constrainten deduper overlappen gratis.
   const to = new Date();
-  const from = new Date(to.getTime() - 12 * 3600 * 1000);
+  const from = new Date(to.getTime() - LOOKBACK_HOURS * 3600 * 1000);
   const url =
     `${FROST}/observations/v0.jsonld` +
     `?sources=${STATIONS.join(',')}` +
@@ -107,9 +112,14 @@ async function main() {
         }
       }
       log.debug('met-poll fullført', { rows: observations.length, inserted });
-      if (inserted > 0) log.info('værdata lagret', { inserted });
+      if (inserted > 0) log.info('værdata lagret', { inserted, lookbackHours: LOOKBACK_HOURS });
     } catch (err) {
       log.warn('met-poll feilet', { error: String(err) });
+    }
+    if (ONESHOT) {
+      log.info('oneshot ferdig, avslutter');
+      await pool.end().catch(() => {});
+      return;
     }
     await sleep(INTERVAL_MS);
   }
