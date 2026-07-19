@@ -66,8 +66,12 @@ Kjører på VM-en, port 3000 — bevisst ikke åpnet i NSG-en, nås kun via
    — kommandoen skriver ut en innloggings-URL. Åpne den i nettleseren, logg inn
    og godkjenn («Connect») at maskinen legges til i tailnettet ditt.
 2. Installer Tailscale-appen på mobilen og logg inn på samme konto.
-3. Åpne `http://homely-logger-vm:3000` (eller Tailscale-IP-en fra
-   `tailscale ip -4`). Innlogging: `admin` + `GRAFANA_ADMIN_PASSWORD` fra `.env`.
+3. Åpne `https://homely-logger-vm.<tailnet>.ts.net` — HTTPS med ekte
+   Let's Encrypt-sertifikat via `tailscale serve` (satt opp med
+   `sudo tailscale serve --bg 3000`; krever at Serve er aktivert i
+   tailnet-innstillingene, uten Funnel). Fortsatt kun nåbar i tailnettet.
+   Reserve: `http://homely-logger-vm:3000`.
+   Innlogging: `admin` + `GRAFANA_ADMIN_PASSWORD` fra `.env`.
 
 Dashboardet «Homely Sensor Logger» provisjoneres automatisk fra
 `app/grafana/dashboards/` — endringer der følger git, ikke klikking i UI-et.
