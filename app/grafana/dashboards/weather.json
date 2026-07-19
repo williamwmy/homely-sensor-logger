@@ -15,7 +15,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT last_updated AS \"time\", 'Ute' AS metric, (value::text)::float AS temp FROM events WHERE feature = 'weather' AND state_name = 'air_temperature' AND $__timeFilter(last_updated) ORDER BY 1"
+          "rawSql": "SELECT last_updated AS \"time\", 'Ute' AS metric, (value::text)::float AS temp FROM events WHERE feature = 'weather' AND state_name = 'air_temperature' AND device_id = 'SN18210' AND $__timeFilter(last_updated) ORDER BY 1"
         },
         {
           "refId": "B",
@@ -50,17 +50,17 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT last_updated AS \"time\", 'Sol (W/m²)' AS metric, (value::text)::float AS v FROM events WHERE feature = 'weather' AND state_name = 'global_radiation' AND $__timeFilter(last_updated) ORDER BY 1"
+          "rawSql": "SELECT last_updated AS \"time\", 'Sol (W/m²)' AS metric, (value::text)::float AS v FROM events WHERE feature = 'weather' AND state_name = 'global_radiation' AND device_id = 'SN18700' AND $__timeFilter(last_updated) ORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT last_updated AS \"time\", 'Vind (m/s)' AS metric, (value::text)::float AS v FROM events WHERE feature = 'weather' AND state_name = 'wind_speed' AND $__timeFilter(last_updated) ORDER BY 1"
+          "rawSql": "SELECT last_updated AS \"time\", 'Vind (m/s)' AS metric, (value::text)::float AS v FROM events WHERE feature = 'weather' AND state_name = 'wind_speed' AND device_id = 'SN18210' AND $__timeFilter(last_updated) ORDER BY 1"
         },
         {
           "refId": "C",
           "format": "time_series",
-          "rawSql": "SELECT last_updated AS \"time\", 'Nedbør (mm/t)' AS metric, (value::text)::float AS v FROM events WHERE feature = 'weather' AND state_name = 'precipitation' AND $__timeFilter(last_updated) ORDER BY 1"
+          "rawSql": "SELECT last_updated AS \"time\", 'Nedbør (mm/t)' AS metric, (value::text)::float AS v FROM events WHERE feature = 'weather' AND state_name = 'precipitation' AND device_id = 'SN18210' AND $__timeFilter(last_updated) ORDER BY 1"
         }
       ],
       "fieldConfig": {

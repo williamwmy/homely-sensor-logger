@@ -9,7 +9,13 @@ import { pool, waitForDb, insertEvent } from './db.js';
 import { log } from './logger.js';
 
 const CLIENT_ID = process.env.FROST_CLIENT_ID;
-const STATION = process.env.MET_STATION_ID || 'SN18700'; // Oslo–Blindern
+// Kommaseparert liste — hver måleserie hentes fra stasjonen som måler den
+// best lokalt. Default: Hovin (temp/vind/nedbør, nær Ensjø) + Blindern
+// (eneste i Oslo med globalstråling; skyer er uansett kilometer-skala).
+const STATIONS = (process.env.MET_STATION_ID || 'SN18210,SN18700')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 const INTERVAL_MS = 30 * 60 * 1000;
 const FROST = 'https://frost.met.no';
 
@@ -25,16 +31,21 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const authHeader = { authorization: `Basic ${Buffer.from(`${CLIENT_ID}:`).toString('base64')}` };
 
-async function stationName() {
+async function stationNames() {
+  const names = new Map(STATIONS.map((id) => [id, `MET ${id}`]));
   try {
-    const res = await fetch(`${FROST}/sources/v0.jsonld?ids=${STATION}`, { headers: authHeader });
-    if (!res.ok) return `MET ${STATION}`;
-    const body = await res.json();
-    const name = body.data?.[0]?.name;
-    return name ? `MET ${name}` : `MET ${STATION}`;
+    const res = await fetch(`${FROST}/sources/v0.jsonld?ids=${STATIONS.join(',')}`, {
+      headers: authHeader,
+    });
+    if (res.ok) {
+      for (const src of (await res.json()).data ?? []) {
+        if (src.id && src.name) names.set(src.id, `MET ${src.name}`);
+      }
+    }
   } catch {
-    return `MET ${STATION}`;
+    // navnene er kosmetiske — fall tilbake til id
   }
+  return names;
 }
 
 async function fetchObservations() {
@@ -44,7 +55,7 @@ async function fetchObservations() {
   const from = new Date(to.getTime() - 12 * 3600 * 1000);
   const url =
     `${FROST}/observations/v0.jsonld` +
-    `?sources=${STATION}` +
+    `?sources=${STATIONS.join(',')}` +
     `&referencetime=${from.toISOString()}/${to.toISOString()}` +
     `&elements=${encodeURIComponent(Object.keys(ELEMENTS).join(','))}`;
 
@@ -67,20 +78,25 @@ async function main() {
   }
 
   await waitForDb();
-  const deviceName = await stationName();
-  log.info('starter met-poller', { station: STATION, deviceName, intervalMinutes: INTERVAL_MS / 60000 });
+  const names = await stationNames();
+  log.info('starter met-poller', {
+    stations: Object.fromEntries(names),
+    intervalMinutes: INTERVAL_MS / 60000,
+  });
 
   for (;;) {
     try {
       const observations = await fetchObservations();
       let inserted = 0;
       for (const entry of observations) {
+        // sourceId kommer som "SN18210:0" — suffikset er sensornivå
+        const stationId = String(entry.sourceId ?? '').split(':')[0];
         for (const obs of entry.observations ?? []) {
           const stateName = ELEMENTS[obs.elementId];
           if (!stateName || obs.value == null) continue;
           const wasNew = await insertEvent({
-            deviceId: STATION,
-            deviceName,
+            deviceId: stationId,
+            deviceName: names.get(stationId) ?? `MET ${stationId}`,
             feature: 'weather',
             stateName,
             value: obs.value,
