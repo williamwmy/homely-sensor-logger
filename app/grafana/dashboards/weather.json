@@ -21,6 +21,11 @@
           "refId": "B",
           "format": "time_series",
           "rawSql": "SELECT last_updated AS \"time\", COALESCE(device_name, device_id) AS metric, (value::text)::float AS temp FROM events WHERE feature = 'temperature' AND state_name = 'temperature' AND $__timeFilter(last_updated) ORDER BY 1"
+        },
+        {
+          "refId": "C",
+          "format": "time_series",
+          "rawSql": "SELECT last_updated AS \"time\", device_name AS metric, (value::text)::float AS temp FROM events WHERE source = 'netatmo' AND state_name = 'air_temperature' AND $__timeFilter(last_updated) ORDER BY 1"
         }
       ],
       "fieldConfig": {

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS events (
   state_name   text        NOT NULL,
   value        jsonb,
   last_updated timestamptz NOT NULL,
-  source       text        NOT NULL CHECK (source IN ('websocket', 'poll', 'met')),
+  source       text        NOT NULL CHECK (source IN ('websocket', 'poll', 'met', 'netatmo')),
 
   -- Websocket og polling overlapper; samme endring skal bare lagres én gang.
   CONSTRAINT events_change_unique UNIQUE (device_id, feature, state_name, last_updated)
@@ -16,6 +16,15 @@ CREATE TABLE IF NOT EXISTS events (
 
 CREATE INDEX IF NOT EXISTS events_device_name_time_idx ON events (device_name, last_updated DESC);
 CREATE INDEX IF NOT EXISTS events_last_updated_idx ON events (last_updated DESC);
+
+-- Liten nøkkel/verdi-tabell for tjeneste-tilstand som må overleve restart,
+-- f.eks. Netatmos roterende refresh-token (engangsbruk — det nye tokenet fra
+-- hver fornyelse må lagres, ellers ryker tilgangen ved neste omstart).
+CREATE TABLE IF NOT EXISTS app_state (
+  key        text PRIMARY KEY,
+  value      text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
 -- Varsler notifier-tjenesten om hver ny rad via LISTEN/NOTIFY.
 CREATE OR REPLACE FUNCTION notify_event() RETURNS trigger AS $$

@@ -81,6 +81,28 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
 
+  netatmo:
+    build: ./collector
+    command: ["node", "src/netatmo.js"]
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NETATMO_CLIENT_ID: ${NETATMO_CLIENT_ID:-}
+      NETATMO_CLIENT_SECRET: ${NETATMO_CLIENT_SECRET:-}
+      NETATMO_REFRESH_TOKEN: ${NETATMO_REFRESH_TOKEN:-}
+      NETATMO_LAT: ${NETATMO_LAT:-59.914}
+      NETATMO_LON: ${NETATMO_LON:-10.785}
+      NETATMO_NEAREST: ${NETATMO_NEAREST:-5}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+
   grafana:
     image: grafana/grafana-oss:latest
     restart: unless-stopped
