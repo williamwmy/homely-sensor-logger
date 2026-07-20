@@ -87,17 +87,15 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT last_updated AS \"time\", COALESCE(device_name, device_id) AS metric, CASE WHEN value::text = 'true' THEN 1 ELSE 0 END AS state FROM events WHERE feature = 'alarm' AND state_name = 'alarm' AND $__timeFilter(last_updated) ORDER BY 1"
+          "rawSql": "SELECT e.last_updated AS \"time\", COALESCE(e.device_name, e.device_id) AS metric, CASE WHEN d.model_name ILIKE '%motion%' THEN (CASE WHEN e.value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN e.value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS tilstand FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND $__timeFilter(e.last_updated) ORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "custom": { "fillOpacity": 70, "lineWidth": 0 },
           "mappings": [
-            { "type": "value", "options": { "0": { "text": "Lukket", "color": "green" }, "1": { "text": "Åpen", "color": "red" } } }
-          ],
-          "max": 1,
-          "min": 0
+            { "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Bevegelse": { "color": "red", "index": 1 }, "Lukket": { "color": "green", "index": 2 }, "Rolig": { "color": "green", "index": 3 } } }
+          ]
         },
         "overrides": []
       }
