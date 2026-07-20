@@ -80,19 +80,24 @@
     {
       "id": 1,
       "type": "timeseries",
-      "title": "Dører — tilstandsendringer (én prikk per endring)",
+      "title": "Dører — tilstandsendringer (øverst = åpnet, nederst = lukket; farge = dør)",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 29 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT e.last_updated AS \"time\", COALESCE(e.device_name, e.device_id) AS metric, dense_rank() OVER (ORDER BY COALESCE(e.device_name, e.device_id)) AS lane FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND COALESCE(d.model_name, '') NOT ILIKE '%motion%' AND $__timeFilter(e.last_updated) ORDER BY 1"
+          "rawSql": "SELECT e.last_updated AS \"time\", COALESCE(e.device_name, e.device_id) AS metric, CASE WHEN e.value::text = 'true' THEN 1 ELSE 0 END AS endring FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND COALESCE(d.model_name, '') NOT ILIKE '%motion%' AND $__timeFilter(e.last_updated) ORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "custom": { "drawStyle": "points", "pointSize": 8, "lineWidth": 0, "axisPlacement": "hidden" }
+          "custom": { "drawStyle": "points", "pointSize": 9, "lineWidth": 0 },
+          "min": -0.5,
+          "max": 1.5,
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "Lukket", "index": 0 }, "1": { "text": "Åpnet", "index": 1 } } }
+          ]
         },
         "overrides": []
       }
