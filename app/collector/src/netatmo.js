@@ -15,7 +15,9 @@ const LON = parseFloat(process.env.NETATMO_LON ?? '10.785');
 // (lengdegrader er ~halvparten så lange som breddegrader på 60°N).
 const DLAT = 0.0135;
 const DLON = 0.027;
-const NEAREST = parseInt(process.env.NETATMO_NEAREST ?? '5', 10);
+// Hvor mange av stasjonene i boksen som lagres. 0 = alle (anbefalt — samme
+// API-kall uansett, og Netatmo kan ikke backfilles, så vi hamstrer rådata).
+const NEAREST = parseInt(process.env.NETATMO_NEAREST ?? '0', 10);
 const INTERVAL_MS = 30 * 60 * 1000;
 const API = 'https://api.netatmo.com';
 
@@ -142,8 +144,9 @@ async function main() {
     try {
       const stations = await fetchPublicStations();
 
-      // Ranger etter avstand fra senter, behold de nærmeste.
-      const ranked = stations
+      // Ranger etter avstand fra senter. NEAREST=0 → behold alle i boksen;
+      // ellers de N nærmeste. (Filtrering til visningsradius skjer i Grafana.)
+      const sorted = stations
         .map((s) => {
           const [lon, lat] = s.place?.location ?? [];
           const t = extractTemp(s);
@@ -151,8 +154,8 @@ async function main() {
           return { id: s._id, dist: distanceM(LAT, LON, lat, lon), ...t, city: s.place?.city };
         })
         .filter(Boolean)
-        .sort((a, b) => a.dist - b.dist)
-        .slice(0, NEAREST);
+        .sort((a, b) => a.dist - b.dist);
+      const ranked = NEAREST > 0 ? sorted.slice(0, NEAREST) : sorted;
 
       let inserted = 0;
       for (const st of ranked) {
