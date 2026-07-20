@@ -4,6 +4,23 @@
   "timezone": "browser",
   "refresh": "1m",
   "time": { "from": "now-24h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "door",
+        "label": "Dør/sensor",
+        "type": "query",
+        "datasource": { "type": "postgres", "uid": "homely-pg" },
+        "definition": "SELECT DISTINCT trim(device_name) FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY 1",
+        "query": "SELECT DISTINCT trim(device_name) FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
   "panels": [
     {
       "id": 20,
@@ -15,7 +32,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT * FROM (SELECT DISTINCT ON (device_id) trim(device_name) AS \"dør\", CASE WHEN trim(device_name) = 'Bevegelsessensor' THEN (CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\", human_time(last_updated) AS \"siden\" FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY device_id, last_updated DESC) s ORDER BY \"dør\""
+          "rawSql": "SELECT * FROM (SELECT DISTINCT ON (device_id) trim(device_name) AS \"dør\", CASE WHEN value::text = 'true' THEN 'Åpen/aktiv' ELSE 'Lukket/rolig' END AS \"status\", human_time(last_updated) AS \"siden\" FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY device_id, last_updated DESC) s ORDER BY \"dør\""
         }
       ],
       "fieldConfig": {
@@ -24,7 +41,7 @@
           {
             "matcher": { "id": "byName", "options": "status" },
             "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Bevegelse": { "color": "red", "index": 1 }, "Lukket": { "color": "green", "index": 2 }, "Rolig": { "color": "green", "index": 3 } } }] },
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen/aktiv": { "color": "red", "index": 0 }, "Lukket/rolig": { "color": "green", "index": 1 } } }] },
               { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           }
@@ -34,14 +51,17 @@
     {
       "id": 10,
       "type": "table",
-      "title": "Inngangsdør",
+      "title": "$door",
+      "repeat": "door",
+      "repeatDirection": "h",
+      "maxPerRow": 2,
       "gridPos": { "h": 7, "w": 12, "x": 0, "y": 8 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Inngangsdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen/aktiv' ELSE 'Lukket/rolig' END AS \"status\" FROM events WHERE trim(device_name) = '$door' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -50,137 +70,7 @@
           {
             "matcher": { "id": "byName", "options": "status" },
             "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 11,
-      "type": "table",
-      "title": "Verandadør",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "postgres", "uid": "homely-pg" },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Verandadør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "status" },
-            "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 12,
-      "type": "table",
-      "title": "2. etg Balkongdør",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 15 },
-      "datasource": { "type": "postgres", "uid": "homely-pg" },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = '2. etg Balkongdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "status" },
-            "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 13,
-      "type": "table",
-      "title": "Takterassedør",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 15 },
-      "datasource": { "type": "postgres", "uid": "homely-pg" },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Takterassedør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "status" },
-            "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 14,
-      "type": "table",
-      "title": "Kontor balkong dør",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 22 },
-      "datasource": { "type": "postgres", "uid": "homely-pg" },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Kontor balkong dør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "status" },
-            "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Lukket": { "color": "green", "index": 1 } } }] },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 15,
-      "type": "table",
-      "title": "Bevegelsessensor",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 22 },
-      "datasource": { "type": "postgres", "uid": "homely-pg" },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END AS \"status\" FROM events WHERE trim(device_name) = 'Bevegelsessensor' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "status" },
-            "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Bevegelse": { "color": "red", "index": 0 }, "Rolig": { "color": "green", "index": 1 } } }] },
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen/aktiv": { "color": "red", "index": 0 }, "Lukket/rolig": { "color": "green", "index": 1 } } }] },
               { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           }
