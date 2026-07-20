@@ -13,7 +13,10 @@ bygger et permanent, spørrbart eventlager.
   - `notifier` — Node (samme image som collector, annen kommando); lytter på
     nye rader via LISTEN/NOTIFY og sender push-varsler til ntfy
   - `grafana` — dashboard, provisjonert fra `app/grafana/` (datasource +
-    to dashbord som kode: sensor-oversikt og «Vær — MET vs. inneklima»)
+    to dashbord som kode: sensor-oversikt og «Vær — MET vs. inneklima»).
+    Per-dør-panelene er selvkonfigurerende: ett repeterende panel drevet av en
+    `door`-variabel (`SELECT DISTINCT device_name` der feature=alarm), så nye
+    sensorer i Homely dukker opp automatisk uten kode-/dashbord-endring.
   - `met` — værpoller mot MET/Frost-API-et (utetemp, globalstråling, vind,
     nedbør → source='met'). Sover uten `FROST_CLIENT_ID`.
   - `netatmo` — poller offentlige nabostasjoner (getpublicdata) rundt et
