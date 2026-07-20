@@ -1,4 +1,5 @@
 import { keyOf } from './ingest.js';
+import { upsertDevice } from './db.js';
 import { log } from './logger.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -18,7 +19,15 @@ export function startPoller({ client, state, ingest, locationId, intervalMs }) {
         for (const device of home.devices ?? []) {
           // Homely-appen tillater etterhengende mellomrom i navn — trim, ellers
           // feiler eksakt-match i Grafana og notifier-ignorelisten.
-          state.deviceNames.set(device.id, device.name?.trim() || null);
+          const trimmet = device.name?.trim() || null;
+          state.deviceNames.set(device.id, trimmet);
+          // modelName gir sensortypen — lagres for type-riktig visning.
+          upsertDevice({
+            deviceId: device.id,
+            name: trimmet,
+            modelName: device.modelName,
+            online: device.online,
+          }).catch((err) => log.warn('kunne ikke oppdatere device-metadata', { error: String(err) }));
 
           for (const [feature, featureData] of Object.entries(device.features ?? {})) {
             for (const [stateName, stateData] of Object.entries(featureData?.states ?? {})) {

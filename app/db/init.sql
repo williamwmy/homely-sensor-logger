@@ -26,6 +26,18 @@ CREATE TABLE IF NOT EXISTS app_state (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Enhets-metadata fra Homely (oppdateres ved hver polling). modelName gir
+-- sensortypen ('Alarm Entry Sensor', 'Alarm Motion Sensor', 'Intelligent
+-- Smoke Alarm' …) — brukes til type-riktig visning i stedet for å gjette på
+-- navnet. `online` fanges også (nyttig for framtidig offline-varsling).
+CREATE TABLE IF NOT EXISTS devices (
+  device_id  text PRIMARY KEY,
+  name       text,
+  model_name text,
+  online     boolean,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Lesbar relativ tid for tabeller i Grafana: «i dag HH:MM», «i går HH:MM»,
 -- ukedag denne uka, ellers dato. Alt i norsk lokaltid.
 CREATE OR REPLACE FUNCTION human_time(ts timestamptz) RETURNS text AS $$

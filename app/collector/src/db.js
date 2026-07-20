@@ -38,6 +38,17 @@ export async function insertEvent({ deviceId, deviceName, feature, stateName, va
   return res.rowCount > 0;
 }
 
+// Oppdater enhets-metadata (navn, modell/type, online) fra en polling.
+export async function upsertDevice({ deviceId, name, modelName, online }) {
+  await pool.query(
+    `INSERT INTO devices (device_id, name, model_name, online, updated_at)
+     VALUES ($1, $2, $3, $4, now())
+     ON CONFLICT (device_id) DO UPDATE
+       SET name = $2, model_name = $3, online = $4, updated_at = now()`,
+    [deviceId, name, modelName ?? null, online ?? null]
+  );
+}
+
 // Sist kjente navn per device, så websocket-events rett etter en restart får
 // navn selv om første poll lar vente på seg (f.eks. ved rate-limit). Uten
 // dette lagres de med device_name NULL.

@@ -32,7 +32,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT * FROM (SELECT DISTINCT ON (device_id) trim(device_name) AS \"dør\", CASE WHEN value::text = 'true' THEN 'Åpen/aktiv' ELSE 'Lukket/rolig' END AS \"status\", human_time(last_updated) AS \"siden\" FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY device_id, last_updated DESC) s ORDER BY \"dør\""
+          "rawSql": "SELECT * FROM (SELECT DISTINCT ON (e.device_id) trim(e.device_name) AS \"dør\", CASE WHEN d.model_name ILIKE '%motion%' THEN (CASE WHEN e.value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN e.value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\", human_time(e.last_updated) AS \"siden\" FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' ORDER BY e.device_id, e.last_updated DESC) s ORDER BY \"dør\""
         }
       ],
       "fieldConfig": {
@@ -41,7 +41,7 @@
           {
             "matcher": { "id": "byName", "options": "status" },
             "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen/aktiv": { "color": "red", "index": 0 }, "Lukket/rolig": { "color": "green", "index": 1 } } }] },
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Bevegelse": { "color": "red", "index": 1 }, "Lukket": { "color": "green", "index": 2 }, "Rolig": { "color": "green", "index": 3 } } }] },
               { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           }
@@ -61,7 +61,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen/aktiv' ELSE 'Lukket/rolig' END AS \"status\" FROM events WHERE trim(device_name) = '$door' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT human_time(e.last_updated) AS \"tid\", CASE WHEN d.model_name ILIKE '%motion%' THEN (CASE WHEN e.value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN e.value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\" FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE trim(e.device_name) = '$door' AND e.feature = 'alarm' AND e.state_name = 'alarm' ORDER BY e.last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -70,7 +70,7 @@
           {
             "matcher": { "id": "byName", "options": "status" },
             "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen/aktiv": { "color": "red", "index": 0 }, "Lukket/rolig": { "color": "green", "index": 1 } } }] },
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Bevegelse": { "color": "red", "index": 1 }, "Lukket": { "color": "green", "index": 2 }, "Rolig": { "color": "green", "index": 3 } } }] },
               { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           }
