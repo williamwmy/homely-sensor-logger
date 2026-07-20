@@ -26,6 +26,26 @@ CREATE TABLE IF NOT EXISTS app_state (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Lesbar relativ tid for tabeller i Grafana: «i dag HH:MM», «i går HH:MM»,
+-- ukedag denne uka, ellers dato. Alt i norsk lokaltid.
+CREATE OR REPLACE FUNCTION human_time(ts timestamptz) RETURNS text AS $$
+DECLARE
+  d      date := (ts AT TIME ZONE 'Europe/Oslo')::date;
+  i_dag  date := (now() AT TIME ZONE 'Europe/Oslo')::date;
+  klokke text := to_char(ts AT TIME ZONE 'Europe/Oslo', 'HH24:MI');
+BEGIN
+  IF d = i_dag THEN
+    RETURN 'i dag ' || klokke;
+  ELSIF d = i_dag - 1 THEN
+    RETURN 'i går ' || klokke;
+  ELSIF d > i_dag - 7 THEN
+    RETURN (ARRAY['søn','man','tir','ons','tor','fre','lør'])[extract(dow from d)::int + 1] || ' ' || klokke;
+  ELSE
+    RETURN to_char(ts AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI');
+  END IF;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
 -- Varsler notifier-tjenesten om hver ny rad via LISTEN/NOTIFY.
 CREATE OR REPLACE FUNCTION notify_event() RETURNS trigger AS $$
 BEGIN

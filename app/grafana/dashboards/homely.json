@@ -15,7 +15,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT * FROM (SELECT DISTINCT ON (device_id) trim(device_name) AS \"dør\", CASE WHEN trim(device_name) = 'Bevegelsessensor' THEN (CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\", to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI') AS \"siden\" FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY device_id, last_updated DESC) s ORDER BY \"dør\""
+          "rawSql": "SELECT * FROM (SELECT DISTINCT ON (device_id) trim(device_name) AS \"dør\", CASE WHEN trim(device_name) = 'Bevegelsessensor' THEN (CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\", human_time(last_updated) AS \"siden\" FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY device_id, last_updated DESC) s ORDER BY \"dør\""
         }
       ],
       "fieldConfig": {
@@ -41,7 +41,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Inngangsdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Inngangsdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -67,7 +67,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Verandadør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Verandadør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -93,7 +93,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = '2. etg Balkongdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = '2. etg Balkongdør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -119,7 +119,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Takterassedør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Takterassedør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -145,7 +145,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Kontor balkong dør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END AS \"status\" FROM events WHERE trim(device_name) = 'Kontor balkong dør' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -171,7 +171,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT to_char(last_updated AT TIME ZONE 'Europe/Oslo', 'DD.MM HH24:MI:SS') AS \"tid\", CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END AS \"status\" FROM events WHERE trim(device_name) = 'Bevegelsessensor' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
+          "rawSql": "SELECT human_time(last_updated) AS \"tid\", CASE WHEN value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END AS \"status\" FROM events WHERE trim(device_name) = 'Bevegelsessensor' AND feature = 'alarm' AND state_name = 'alarm' ORDER BY last_updated DESC LIMIT 5"
         }
       ],
       "fieldConfig": {
@@ -243,7 +243,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT last_updated AS \"tid\", COALESCE(device_name, device_id) AS \"device\", feature, state_name AS \"state\", value::text AS \"verdi\", source AS \"kilde\" FROM events ORDER BY last_updated DESC LIMIT 50"
+          "rawSql": "SELECT human_time(last_updated) AS \"tid\", COALESCE(device_name, device_id) AS \"device\", feature, state_name AS \"state\", value::text AS \"verdi\", source AS \"kilde\" FROM events ORDER BY last_updated DESC LIMIT 50"
         }
       ],
       "fieldConfig": { "defaults": {}, "overrides": [] }
