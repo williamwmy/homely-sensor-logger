@@ -25,7 +25,7 @@
         {
           "refId": "C",
           "format": "time_series",
-          "rawSql": "SELECT date_bin('30 minutes', last_updated, TIMESTAMPTZ '2000-01-01') AS \"time\", 'Netatmo median (<200m)' AS metric, percentile_cont(0.5) WITHIN GROUP (ORDER BY (value::text)::float) AS temp FROM events WHERE source = 'netatmo' AND state_name = 'air_temperature' AND COALESCE(substring(device_name from 'Netatmo ([0-9]+)m')::int, 99999) <= 200 AND $__timeFilter(last_updated) GROUP BY 1 HAVING count(DISTINCT device_id) >= 3 ORDER BY 1"
+          "rawSql": "SELECT date_bin('30 minutes', received_at, TIMESTAMPTZ '2000-01-01') AS \"time\", 'Netatmo median (<200m)' AS metric, percentile_cont(0.5) WITHIN GROUP (ORDER BY (value::text)::float) AS temp FROM events WHERE source = 'netatmo' AND state_name = 'air_temperature' AND COALESCE(substring(device_name from 'Netatmo ([0-9]+)m')::int, 99999) <= 200 AND $__timeFilter(received_at) GROUP BY 1 HAVING count(DISTINCT device_id) >= 3 ORDER BY 1"
         }
       ],
       "fieldConfig": {
