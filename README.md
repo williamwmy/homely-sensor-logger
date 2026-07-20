@@ -4,9 +4,10 @@ Logger alle sensor-triggere fra Homely-alarmsystemet til Postgres, slik at hele
 historikken bevares — Homely-appen viser bare siste aktivitet.
 
 - `infra/` — Terraform for en liten Ubuntu-VM i Azure (Norway East) med Docker.
-- `app/` — Docker Compose med fire tjenester: `collector` (Node, websocket +
-  polling mot Homely), `db` (Postgres 16), `notifier` (push-varsler via ntfy)
-  og `grafana` (dashboard).
+- `app/` — Docker Compose med seks tjenester: `collector` (Node, websocket +
+  polling mot Homely), `db` (Postgres 16), `notifier` (push-varsler via ntfy),
+  `grafana` (dashbord), `met` (vær fra MET/Frost) og `netatmo` (offentlige
+  nabo-værstasjoner). `met` og `netatmo` sover til de får credentials i `.env`.
 
 Appen har ingen Azure-avhengigheter og kan flyttes rett over på en Raspberry Pi
 eller VPS: kopier `app/`-mappen, sett opp `.env`, kjør `docker compose up -d`.
@@ -54,6 +55,11 @@ Senere deployer (etter `git push`) gjøres fra din egen maskin med:
 ```bash
 ./deploy.sh   # ssh + git pull + docker compose up -d --build på VM-en
 ```
+
+VM-en oppdaterer seg selv ukentlig (mandager 03:30 UTC) via `update.sh` som
+cron-jobb: OS-pakker, Docker/Tailscale og container-images (Grafana, Postgres),
+med auto-reboot ved kjerneoppdatering. Resultatet meldes på ntfy-`status`-topicet
+— stille ved ingen endring, lav prioritet ved oppdatering, høy ved feil.
 
 ## Rive alt
 
@@ -106,8 +112,26 @@ gir varselflom.
 
 **Oppgraderer du en eksisterende installasjon** (Postgres-volum fra før
 notifier/Grafana fantes): init-scriptene i `app/db/` kjører kun på ferske
-volumer, så pg_notify-triggeren og `grafana_reader`-rollen må legges inn
-manuelt med `docker compose exec db psql -U homely homely` (se `app/db/`).
+volumer, så pg_notify-triggeren, `grafana_reader`-rollen, `app_state`-tabellen
+og utvidelser av `source`-constrainten må legges inn manuelt med
+`docker compose exec db psql -U homely homely` (se `app/db/`).
+
+## Værdata (valgfritt): ute-mot-inne
+
+Dashbordet «Vær — MET vs. inneklima» sammenligner innesensorene med utetemperatur,
+sol, vind og nedbør. To valgfrie kilder, begge sover til de får credentials:
+
+- **MET/Frost** — gratis client-ID fra [frost.met.no](https://frost.met.no) i
+  `FROST_CLIENT_ID`. Henter fra nærmeste stasjoner (`MET_STATION_ID`, default
+  Hovin + Blindern). Historikk kan backfilles med `MET_LOOKBACK_HOURS` +
+  `MET_ONESHOT=1`.
+- **Netatmo** — offentlige nabo-værstasjoner rundt `NETATMO_LAT`/`NETATMO_LON`.
+  Opprett app + generer token (scope `read_station`) på
+  [dev.netatmo.com/apps](https://dev.netatmo.com/apps), sett `NETATMO_CLIENT_ID`,
+  `NETATMO_CLIENT_SECRET` og `NETATMO_REFRESH_TOKEN`. NB: `getpublicdata` gir kun
+  siste måling — ingen historikk å hente. Dashbordet viser medianen av
+  stasjonene innenfor 200 m med et p25–p75-bånd (bredden = usikkerheten);
+  kalibrert Frost Hovin er ankeret når nabolaget spriker i sol.
 
 ## Eksempel-spørringer
 

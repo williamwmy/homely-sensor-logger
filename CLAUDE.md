@@ -7,15 +7,19 @@ bygger et permanent, spørrbart eventlager.
 
 ## Arkitektur
 - Én liten Linux-VM (Ubuntu) i Azure, Norway East, på MSDN-kreditt.
-- Docker Compose med fire tjenester:
+- Docker Compose med seks tjenester:
   - `collector` — Node; websocket + polling mot Homely, skriver til Postgres
   - `db` — Postgres 16, append-only `events`-tabell
   - `notifier` — Node (samme image som collector, annen kommando); lytter på
     nye rader via LISTEN/NOTIFY og sender push-varsler til ntfy
   - `grafana` — dashboard, provisjonert fra `app/grafana/` (datasource +
-    dashboard som kode)
+    to dashbord som kode: sensor-oversikt og «Vær — MET vs. inneklima»)
   - `met` — værpoller mot MET/Frost-API-et (utetemp, globalstråling, vind,
-    nedbør → source='met', eget dashboard). Sover uten `FROST_CLIENT_ID`.
+    nedbør → source='met'). Sover uten `FROST_CLIENT_ID`.
+  - `netatmo` — poller offentlige nabostasjoner (getpublicdata) rundt et
+    senterpunkt → source='netatmo'. Sover uten `NETATMO_*`-credentials.
+  De to sistnevnte er samme image som collector, egen kommando.
+- Alle tjenester har logg-rotasjon (10 MB × 3) via `x-logging`-anker.
 - All config i `.env`. Ingen hemmeligheter i koden eller i git.
 - Bevisst flyttbart: samme compose skal kunne kjøre uendret på en Raspberry Pi
   eller VPS hvis Azure-kreditten forsvinner. Ingen Azure-spesifikke avhengigheter
@@ -86,14 +90,22 @@ Tabell `events`:
 - `feature` text
 - `state_name` text
 - `value` jsonb (tåler bool, tall, tekst)
-- `last_updated` timestamptz (Homelys egen timestamp for endringen)
-- `source` text ('websocket' eller 'poll')
+- `last_updated` timestamptz (kildens egen timestamp for endringen)
+- `source` text ('websocket', 'poll', 'met' eller 'netatmo')
+
+Alle datakilder deler samme skjema — Homely-events, MET-vær og Netatmo-naboer
+er bare rader med ulik `source`/`feature`/`state_name`. Derfor kunne værdata
+legges til uten å endre skjemaet.
 
 Websocket og polling vil overlappe. Gjør en rad unik på
 (device_id, feature, state_name, last_updated) med en unik constraint, og bruk
 `INSERT ... ON CONFLICT DO NOTHING` så samme endring ikke logges to ganger.
 
-I tillegg til tabellen:
+Tabell `app_state` (key/value): tjeneste-tilstand som må overleve restart —
+p.t. Netatmos roterende refresh-token (engangsbruk; det nye tokenet fra hver
+fornyelse lagres her, ikke i `.env`).
+
+I tillegg til tabellene:
 - Trigger `events_notify` (AFTER INSERT) gjør `pg_notify('events_channel',
   row_to_json(NEW))` — notifier-tjenesten lytter på denne kanalen.
 - Egen leserolle `grafana_reader` (kun SELECT på `events`) for Grafana.
@@ -115,10 +127,35 @@ I tillegg til tabellen:
     (default 900) varsles aldri — hindrer varselflom når polling tar igjen
     etterslep etter nedetid. ntfy.sh ser varselinnholdet (bevisst valg);
     self-hosting av ntfy er exit-strategien hvis det blir et problem.
-- **Homely rate-limiter** `/homely/home` (HTTP 429) ved hyppige kall — typisk
-  utløst av mange restarter/manuelle kall på kort tid, ikke av normal
-  2-minutters-polling. Polleren håndterer det med eksponentiell backoff
-  (dobling per 429, maks 15 min). 429 gir forsinkelse, aldri datatap.
+- **Homely rate-limiter** `/homely/home` (HTTP 429): stram, målt ~4 vellykkede
+  kall i timen. 2, 10 og 15 min polling ga alle jevnlig 429 (2026-07-19);
+  default er derfor 20 min (`POLL_INTERVAL_SECONDS=1200`). Polleren håndterer
+  429 med eksponentiell backoff (dobling, maks 15 min). Gir forsinkelse, aldri
+  datatap — websocketen bærer sanntid.
+
+## Værkilder (ute-mot-inne)
+- **MET/Frost** (`met.js`): historikk *kan* backfilles (`MET_LOOKBACK_HOURS`
+  + `MET_ONESHOT=1`). Hybrid stasjonsoppsett: Hovin (SN18210, temp/vind/nedbør,
+  nær Ensjø) + Blindern (SN18700, eneste i Oslo med globalstråling).
+- **Netatmo** (`netatmo.js`): `getpublicdata` gir KUN siste måling per offentlig
+  nabostasjon — ingen historikk å hente (i motsetning til Frost). Data akkumuleres
+  kun fremover. Lagrer de N nærmeste innenfor boksen; `filter=true`.
+- **Statistikk-lærdom**: nabostasjoners feilplassering (sol på utedel) er en
+  *systematisk, ensidig* skjevhet, ikke støy. Median slår snitt, men når sola
+  rammer flertallet følger medianen dem opp — da er kalibrert Frost Hovin eneste
+  pålitelige. Vær-dashbordet viser derfor Netatmo-median med p25–p75-bånd
+  (bredde = usikkerhet) mot Frost Hovin som anker.
+
+## Vedlikehold og livssyklus
+- `deploy.sh` — ssh + git pull + `docker compose up -d --build` (via Tailscale).
+- `update.sh` — ukentlig cron på VM-en (mandager 03:30 UTC): apt upgrade
+  (dekker Docker+Tailscale), `compose pull` (Grafana/Postgres), prune,
+  helsesjekk, auto-reboot ved kjerneoppdatering. Varsler status-topicet:
+  stille ved ingen endring, lav prioritet ved oppdatering, høy ved feil.
+- `destroy.sh [--full]` — avskjedsdump av db → `tailscale logout` →
+  `terraform destroy` (+ tfstate-rg/NetworkWatcherRG med `--full`).
+- Daglig hjertebank kl. 08 (`HEARTBEAT_HOUR`) på `-status`-topicet; uteblitt
+  melding = noe nede.
 
 ## Konvensjoner
 - Språk: Node (JavaScript eller TypeScript). `socket.io-client` for streaming
