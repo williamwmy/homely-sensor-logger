@@ -142,7 +142,18 @@ I tillegg til tabellene:
   nær Ensjø) + Blindern (SN18700, eneste i Oslo med globalstråling).
 - **Netatmo** (`netatmo.js`): `getpublicdata` gir KUN siste måling per offentlig
   nabostasjon — ingen historikk å hente (i motsetning til Frost). Data akkumuleres
-  kun fremover. Lagrer de N nærmeste innenfor boksen; `filter=true`.
+  kun fremover. Henter alt i en boks (`DLAT`/`DLON`, ~flere km), sorterer på
+  avstand og lagrer de `NETATMO_NEAREST` nærmeste (default 100, 0 = alle);
+  `filter=true`. Grafana filtrerer så til visningsradius (300 m).
+- **Netatmo-API-grenser** (dels udokumentert — verifisert/community):
+  - Rate-limit: 500 kall/time per bruker (50/10s). Vår poller: ~48 kall/døgn,
+    milevis under.
+  - `getpublicdata` har et **udokumentert tak** på antall stasjoner per kall;
+    store bokser returnerer et *utvalg*, ikke alt. Community-regel: rute på
+    **~0,06°** er største som pålitelig gir alle stasjoner. Full by-dekning
+    krever derfor tiling (rutenett av små bokser) — ikke gjort her, og gir
+    uansett bare et dårligere Frost-duplikat på by-skala.
+  - Refresh-token roteres (engangsbruk) — lagres i `app_state` [[datamodell]].
 - **Statistikk-lærdom**: nabostasjoners feilplassering (sol på utedel) er en
   *systematisk, ensidig* skjevhet, ikke støy. Median slår snitt, men når sola
   rammer flertallet følger medianen dem opp — da er kalibrert Frost Hovin eneste
