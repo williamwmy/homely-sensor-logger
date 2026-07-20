@@ -46,7 +46,8 @@
             "matcher": { "id": "byName", "options": "Netatmo median (<200m)" },
             "properties": [
               { "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } },
-              { "id": "custom.lineWidth", "value": 3 }
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 8] } }
             ]
           }
         ]
