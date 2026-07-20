@@ -35,7 +35,7 @@
         {
           "refId": "E",
           "format": "time_series",
-          "rawSql": "SELECT date_bin('30 minutes', received_at, TIMESTAMPTZ '2000-01-01') AS \"time\", 'Netatmo p75' AS metric, percentile_cont(0.75) WITHIN GROUP (ORDER BY (value::text)::float) AS temp FROM events WHERE source = 'netatmo' AND state_name = 'air_temperature' AND COALESCE(substring(device_name from 'Netatmo ([0-9]+)m')::int, 99999) <= 200 AND $__timeFilter(received_at) GROUP BY 1 HAVING count(DISTINCT device_id) >= 3 ORDER BY 1"
+          "rawSql": "SELECT date_bin('30 minutes', received_at, TIMESTAMPTZ '2000-01-01') AS \"time\", 'Netatmo spredning (p25-p75)' AS metric, percentile_cont(0.75) WITHIN GROUP (ORDER BY (value::text)::float) AS temp FROM events WHERE source = 'netatmo' AND state_name = 'air_temperature' AND COALESCE(substring(device_name from 'Netatmo ([0-9]+)m')::int, 99999) <= 200 AND $__timeFilter(received_at) GROUP BY 1 HAVING count(DISTINCT device_id) >= 3 ORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -69,13 +69,13 @@
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Netatmo p75" },
+            "matcher": { "id": "byName", "options": "Netatmo spredning (p25-p75)" },
             "properties": [
               { "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } },
               { "id": "custom.lineWidth", "value": 0 },
               { "id": "custom.fillOpacity", "value": 18 },
               { "id": "custom.fillBelowTo", "value": "Netatmo p25" },
-              { "id": "custom.hideFrom", "value": { "legend": true, "tooltip": false, "viz": false } }
+              { "id": "custom.hideFrom", "value": { "legend": false, "tooltip": false, "viz": false } }
             ]
           }
         ]
