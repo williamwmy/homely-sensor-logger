@@ -38,9 +38,10 @@ function ruleFor(evt) {
       title: name,
       message: opened ? `${name} åpnet` : `${name} lukket`,
       priority: 'default',
-      // 🚪 identifiserer at det er en dør; hengelåsen viser tilstanden:
-      // 🔓 åpen (unlock) vs 🔒 lukket (lock) — lett å skille på et blikk.
-      tags: opened ? 'door,unlock' : 'door,lock',
+      // 🚪 identifiserer at det er en dør; fargesirkelen viser tilstanden.
+      // Farge skiller best på liten skjerm: 🔵 åpen (matcher blått i dashbordet)
+      // vs 🟢 lukket (grønt). Solid farge er lesbart uansett størrelse.
+      tags: opened ? 'door,large_blue_circle' : 'door,green_circle',
     };
   }
 
