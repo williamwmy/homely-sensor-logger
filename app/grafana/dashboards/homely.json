@@ -61,7 +61,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT human_time(e.last_updated) AS \"tid\", CASE WHEN d.model_name ILIKE '%motion%' THEN (CASE WHEN e.value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN e.value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\" FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE current_name(e.device_id) = '$door' AND e.feature = 'alarm' AND e.state_name = 'alarm' ORDER BY e.last_updated DESC LIMIT 10"
+          "rawSql": "SELECT human_time(e.last_updated) AS \"tid\", CASE WHEN d.model_name ILIKE '%motion%' THEN (CASE WHEN e.value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN e.value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\" FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE current_name(e.device_id) = '$door' AND e.feature = 'alarm' AND e.state_name = 'alarm' AND $__timeFilter(e.last_updated) ORDER BY e.last_updated DESC"
         }
       ],
       "fieldConfig": {
