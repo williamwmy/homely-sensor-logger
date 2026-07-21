@@ -32,12 +32,15 @@ function ruleFor(evt) {
 
   if (evt.feature === 'alarm' && evt.state_name === 'alarm') {
     if (IGNORE_DEVICES.includes(name)) return null;
+    const opened = evt.value === true;
     return {
       topic: 'dor',
       title: name,
-      message: evt.value === true ? `${name} åpnet` : `${name} lukket`,
+      message: opened ? `${name} åpnet` : `${name} lukket`,
       priority: 'default',
-      tags: 'door',
+      // 🚪 identifiserer at det er en dør; hengelåsen viser tilstanden:
+      // 🔓 åpen (unlock) vs 🔒 lukket (lock) — lett å skille på et blikk.
+      tags: opened ? 'door,unlock' : 'door,lock',
     };
   }
 
