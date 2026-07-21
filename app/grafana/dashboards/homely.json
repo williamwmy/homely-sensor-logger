@@ -41,7 +41,7 @@
           {
             "matcher": { "id": "byName", "options": "status" },
             "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Bevegelse": { "color": "red", "index": 1 }, "Lukket": { "color": "green", "index": 2 }, "Rolig": { "color": "green", "index": 3 } } }] },
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "blue", "index": 0 }, "Bevegelse": { "color": "blue", "index": 1 }, "Lukket": { "color": "green", "index": 2 }, "Rolig": { "color": "green", "index": 3 } } }] },
               { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           }
@@ -70,7 +70,7 @@
           {
             "matcher": { "id": "byName", "options": "status" },
             "properties": [
-              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "red", "index": 0 }, "Bevegelse": { "color": "red", "index": 1 }, "Lukket": { "color": "green", "index": 2 }, "Rolig": { "color": "green", "index": 3 } } }] },
+              { "id": "mappings", "value": [{ "type": "value", "options": { "Åpen": { "color": "blue", "index": 0 }, "Bevegelse": { "color": "blue", "index": 1 }, "Lukket": { "color": "green", "index": 2 }, "Rolig": { "color": "green", "index": 3 } } }] },
               { "id": "custom.cellOptions", "value": { "type": "color-background" } }
             ]
           }
@@ -80,7 +80,7 @@
     {
       "id": 1,
       "type": "state-timeline",
-      "title": "Dører — åpen/lukket over tid (grønt = lukket, rødt = åpen)",
+      "title": "Dører — åpen/lukket over tid (grønt = lukket, blått = åpen)",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 29 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
@@ -94,7 +94,7 @@
         "defaults": {
           "custom": { "fillOpacity": 70, "lineWidth": 0 },
           "mappings": [
-            { "type": "value", "options": { "0": { "text": "Lukket", "color": "green" }, "1": { "text": "Åpen", "color": "red" } } }
+            { "type": "value", "options": { "0": { "text": "Lukket", "color": "green" }, "1": { "text": "Åpen", "color": "blue" } } }
           ],
           "max": 1,
           "min": 0
