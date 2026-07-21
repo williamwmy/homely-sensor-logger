@@ -20,3 +20,14 @@ variable "vm_size" {
   type        = string
   default     = "Standard_B2s"
 }
+
+variable "backup_retention_days" {
+  description = "Antall dager databasebackuper beholdes i Azure Blob Storage."
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.backup_retention_days >= 7
+    error_message = "backup_retention_days må være minst 7."
+  }
+}

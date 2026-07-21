@@ -17,20 +17,37 @@ services:
       GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
       retries: 12
 
+  migrate:
+    image: postgres:16
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD}
+    volumes:
+      - ./db/migrate.sh:/migrate.sh:ro
+      - ./db/migrations:/migrations:ro
+    entrypoint: ["/bin/sh", "/migrate.sh"]
+
   collector:
     build: ./collector
     restart: unless-stopped
     logging: *default-logging
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       HOMELY_USERNAME: ${HOMELY_USERNAME}
       HOMELY_PASSWORD: ${HOMELY_PASSWORD}
@@ -48,8 +65,8 @@ services:
     restart: unless-stopped
     logging: *default-logging
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       NTFY_BASE_URL: ${NTFY_BASE_URL:-https://ntfy.sh}
       NTFY_TOPIC_SECRET: ${NTFY_TOPIC_SECRET}
@@ -69,8 +86,8 @@ services:
     restart: unless-stopped
     logging: *default-logging
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       FROST_CLIENT_ID: ${FROST_CLIENT_ID:-}
       MET_STATION_ID: ${MET_STATION_ID:-SN18700}
@@ -87,8 +104,8 @@ services:
     restart: unless-stopped
     logging: *default-logging
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       NETATMO_CLIENT_ID: ${NETATMO_CLIENT_ID:-}
       NETATMO_CLIENT_SECRET: ${NETATMO_CLIENT_SECRET:-}
@@ -108,8 +125,8 @@ services:
     restart: unless-stopped
     logging: *default-logging
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     # Port 3000 er ikke åpnet i NSG-en — kun nåbar via Tailscale/localhost.
     ports:
       - "3000:3000"

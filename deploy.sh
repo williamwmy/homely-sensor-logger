@@ -14,6 +14,7 @@ ssh "$HOST" '
   set -e
   cd homely-sensor-logger
   git pull
+  sudo ./setup-backup.sh
   cd app
   docker compose up -d --build
   echo

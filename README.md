@@ -4,10 +4,11 @@ Logger alle sensor-triggere fra Homely-alarmsystemet til Postgres, slik at hele
 historikken bevares — Homely-appen viser bare siste aktivitet.
 
 - `infra/` — Terraform for en liten Ubuntu-VM i Azure (Norway East) med Docker.
-- `app/` — Docker Compose med seks tjenester: `collector` (Node, websocket +
+- `app/` — Docker Compose med seks langvarige tjenester: `collector` (Node, websocket +
   polling mot Homely), `db` (Postgres 16), `notifier` (push-varsler via ntfy),
   `grafana` (dashbord), `met` (vær fra MET/Frost) og `netatmo` (offentlige
-  nabo-værstasjoner). `met` og `netatmo` sover til de får credentials i `.env`.
+  nabo-værstasjoner), pluss en kortlivet `migrate`-tjeneste før oppstart.
+  `met` og `netatmo` sover til de får credentials i `.env`.
 
 Appen har ingen Azure-avhengigheter og kan flyttes rett over på en Raspberry Pi
 eller VPS: kopier `app/`-mappen, sett opp `.env`, kjør `docker compose up -d`.
@@ -61,6 +62,26 @@ cron-jobb: OS-pakker, Docker/Tailscale og container-images (Grafana, Postgres),
 med auto-reboot ved kjerneoppdatering. Resultatet meldes på ntfy-`status`-topicet
 — stille ved ingen endring, lav prioritet ved oppdatering, høy ved feil.
 
+### Databasebackup
+
+Terraform oppretter en privat Azure Storage Account og gir VM-ens managed
+identity skrivetilgang. `deploy.sh` installerer en cron-jobb som hver natt 02:17
+UTC tar en komprimert, transaksjonskonsistent `pg_dump` og laster den opp til
+`backups/database/`. Backuper eldre enn `backup_retention_days` (default 30)
+slettes automatisk. Ingen lagringsnøkkel ligger på VM-en.
+
+Etter oppgradering av en eksisterende installasjon må infrastrukturen opprettes
+først, deretter deployes applikasjonen:
+
+```bash
+terraform -chdir=infra apply
+./deploy.sh
+```
+
+Test en manuell backup på VM-en med `sudo ./backup.sh`. Feil varsles på
+ntfy-`status`-topicet og logges i `/var/log/homely-backup.log`. En dump kan
+lastes ned fra Storage Account-en og gjenopprettes med `pg_restore`.
+
 ## Rive alt
 
 ```bash
@@ -94,8 +115,10 @@ Dashboardet «Homely Sensor Logger» provisjoneres automatisk fra
 
 ### Push-varsler (ntfy)
 
-`notifier`-tjenesten lytter på nye events i Postgres (LISTEN/NOTIFY) og sender
-til [ntfy](https://ntfy.sh)-topics. Sett `NTFY_TOPIC_SECRET` i `.env`
+`notifier`-tjenesten legger nye events i en varig databasekø og sender dem til
+[ntfy](https://ntfy.sh)-topics. Mislykket levering forsøkes igjen med backoff;
+LISTEN/NOTIFY brukes bare for å vekke køleseren raskt. Sett
+`NTFY_TOPIC_SECRET` i `.env`
 (generer med `openssl rand -hex 16`), installer ntfy-appen og abonner på:
 
 - `homely-<NTFY_TOPIC_SECRET>-dor` — dører åpnes/lukkes
@@ -110,11 +133,9 @@ varslene på ntfy.sh). Devices som ikke skal gi dørvarsler styres med
 `NOTIFY_MAX_AGE_SECONDS` varsles aldri, så poll-etterslep etter nedetid ikke
 gir varselflom.
 
-**Oppgraderer du en eksisterende installasjon** (Postgres-volum fra før
-notifier/Grafana fantes): init-scriptene i `app/db/` kjører kun på ferske
-volumer, så pg_notify-triggeren, `grafana_reader`-rollen, `app_state`-tabellen
-og utvidelser av `source`-constrainten må legges inn manuelt med
-`docker compose exec db psql -U homely homely` (se `app/db/`).
+Databaseskjemaet oppgraderes automatisk av `migrate` før de andre tjenestene
+starter. Kjørte migreringer registreres i `schema_migrations`; nye endringer
+legges som nummererte SQL-filer i `app/db/migrations/`.
 
 ## Værdata (valgfritt): ute-mot-inne
 

@@ -109,18 +109,23 @@ p.t. Netatmos roterende refresh-token (engangsbruk; det nye tokenet fra hver
 fornyelse lagres her, ikke i `.env`).
 
 I tillegg til tabellene:
-- Trigger `events_notify` (AFTER INSERT) gjør `pg_notify('events_channel',
-  row_to_json(NEW))` — notifier-tjenesten lytter på denne kanalen.
-- Egen leserolle `grafana_reader` (kun SELECT på `events`) for Grafana.
-- NB: init-scriptene i `app/db/` kjører kun på ferskt Postgres-volum. Endringer
-  i skjemaet må også migreres manuelt inn i en kjørende database med
-  `docker compose exec db psql`.
+- Trigger `events_notify` (AFTER INSERT) legger raden i `notification_outbox` og
+  gjør `pg_notify('events_channel', NEW.id)` — notifier-tjenesten lytter på
+  kanalen (kun et vekkesignal; sannheten ligger i outboxen).
+- Egen leserolle `grafana_reader` (kun SELECT på `events` og `devices`) for Grafana.
+- Skjemaet driftes av migreringer: nummererte filer i `app/db/migrations/`,
+  kjørt av den kortlivede `migrate`-tjenesten (samme postgres-image) FØR de andre
+  tjenestene starter (`service_completed_successfully`). Kjørte migreringer
+  spores i `schema_migrations`; kjøres idempotent på både ferske og eksisterende
+  volumer. Nye skjemaendringer legges som en ny nummerert SQL-fil — ingen manuell
+  `docker compose exec db psql` lenger.
 
 ## Innsyn og varsler
 - **Grafana** (`app/grafana/`): datasource og dashboard provisjoneres som kode.
   Innlogging admin + `GRAFANA_ADMIN_PASSWORD`. Nås kun via Tailscale:
   `http://homely-logger-vm:3000`.
-- **Push** (`app/collector/src/notifier.js`): ntfy.sh med hemmelige topic-navn
+- **Push** (`app/collector/src/notifier.js`): varig PostgreSQL-outbox med retry,
+  deretter ntfy.sh med hemmelige topic-navn
   `homely-<NTFY_TOPIC_SECRET>-{dor,sikkerhet,batteri}`. Regler:
   - dør (feature=alarm, state=alarm, value true=åpnet/false=lukket) → `-dor`;
     devices i `NOTIFY_IGNORE_DEVICES` (default Bevegelsessensor) varsles ikke

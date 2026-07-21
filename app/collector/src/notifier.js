@@ -100,24 +100,91 @@ async function send(rule) {
   }
 }
 
-async function handle(evt) {
+async function markProcessed(outboxId, sent) {
+  await pool.query(
+    `UPDATE notification_outbox
+     SET processed_at = now(), sent_at = CASE WHEN $2 THEN now() ELSE NULL END,
+         last_error = NULL
+     WHERE id = $1`,
+    [outboxId, sent]
+  );
+}
+
+async function defer(outboxId, attempts, err) {
+  // 10s, 20s, 40s ... opp til én time. Elementet blir liggende helt til det
+  // lykkes; en ntfy-feil eller omstart mister dermed ikke varselet.
+  const delaySeconds = Math.min(10 * (2 ** attempts), 3600);
+  await pool.query(
+    `UPDATE notification_outbox
+     SET attempts = attempts + 1,
+         next_attempt_at = now() + make_interval(secs => $2),
+         last_error = $3
+     WHERE id = $1`,
+    [outboxId, delaySeconds, String(err).slice(0, 2000)]
+  );
+  return delaySeconds;
+}
+
+async function handleQueued(row) {
   // Polling som tar igjen etterslep skriver events med gamle timestamps —
   // de skal i databasen, men ikke vekke noen midt på natta i etterkant.
-  const ageMs = Date.now() - new Date(evt.last_updated).getTime();
+  const ageMs = Date.now() - new Date(row.last_updated).getTime();
   if (!Number.isFinite(ageMs) || ageMs > MAX_AGE_MS) {
-    log.debug('hopper over gammel event', { device: evt.device_name, ageSeconds: Math.round(ageMs / 1000) });
+    await markProcessed(row.outbox_id, false);
+    log.debug('hopper over gammel event', { device: row.device_name, ageSeconds: Math.round(ageMs / 1000) });
     return;
   }
 
-  const rule = ruleFor(evt);
-  if (!rule) return;
+  const rule = ruleFor(row);
+  if (!rule) {
+    await markProcessed(row.outbox_id, false);
+    return;
+  }
 
   try {
     await send(rule);
+    await markProcessed(row.outbox_id, true);
     log.info('push-varsel sendt', { topic: rule.topic, message: rule.message });
   } catch (err) {
-    log.warn('kunne ikke sende push-varsel', { message: rule.message, error: String(err) });
+    const retryInSeconds = await defer(row.outbox_id, row.attempts, err);
+    log.warn('kunne ikke sende push-varsel, prøver igjen', {
+      message: rule.message,
+      error: String(err),
+      retryInSeconds,
+    });
   }
+}
+
+let draining = false;
+
+async function drainQueue() {
+  if (draining) return;
+  draining = true;
+  try {
+    for (;;) {
+      const res = await pool.query(`
+        SELECT o.id AS outbox_id, o.attempts, e.*
+        FROM notification_outbox o
+        JOIN events e ON e.id = o.event_id
+        WHERE o.processed_at IS NULL
+          AND o.next_attempt_at <= now()
+        ORDER BY o.id
+        LIMIT 50
+      `);
+      if (res.rows.length === 0) return;
+      for (const row of res.rows) await handleQueued(row);
+    }
+  } finally {
+    draining = false;
+  }
+}
+
+async function cleanupQueue() {
+  const res = await pool.query(`
+    DELETE FROM notification_outbox
+    WHERE processed_at < now() - interval '7 days'
+  `);
+  if (res.rowCount > 0) log.info('ryddet behandlet varslingskø', { rows: res.rowCount });
 }
 
 // Daglig hjertebank: et lite statusvarsel hver morgen. Verdien ligger like mye
@@ -150,21 +217,24 @@ function startHeartbeat() {
     return;
   }
   let lastSentDate = null;
+  let sending = false;
   setInterval(() => {
     // sv-SE gir ISO-aktig format: "2026-07-19 08:00:12"
     const oslo = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Oslo' });
     const [date, time] = oslo.split(' ');
-    if (parseInt(time.slice(0, 2), 10) === HEARTBEAT_HOUR && lastSentDate !== date) {
-      lastSentDate = date;
-      sendHeartbeat().catch((err) => log.warn('hjertebank feilet', { error: String(err) }));
+    if (parseInt(time.slice(0, 2), 10) === HEARTBEAT_HOUR && lastSentDate !== date && !sending) {
+      sending = true;
+      sendHeartbeat()
+        .then(() => { lastSentDate = date; })
+        .catch((err) => log.warn('hjertebank feilet, prøver igjen neste minutt', { error: String(err) }))
+        .finally(() => { sending = false; });
     }
   }, 60_000);
   log.info('hjertebank aktivert', { hourOslo: HEARTBEAT_HOUR });
 }
 
-// Dedikert tilkobling (ikke pool) — LISTEN er knyttet til én sesjon.
-// Mister vi den, kobler vi til igjen med backoff; ingen events går tapt i
-// databasen uansett, vi mister bare varsler i nedetiden.
+// Dedikert tilkobling (ikke pool) — LISTEN er knyttet til én sesjon. NOTIFY
+// vekker køleseren raskt, mens periodisk polling og outboxen gir varighet.
 async function run() {
   log.info('starter notifier', {
     ntfyBaseUrl: NTFY_BASE_URL,
@@ -173,6 +243,13 @@ async function run() {
   });
 
   startHeartbeat();
+  setInterval(() => {
+    drainQueue().catch((err) => log.warn('kunne ikke lese varslingskø', { error: String(err) }));
+  }, 30_000);
+  cleanupQueue().catch((err) => log.warn('kunne ikke rydde varslingskø', { error: String(err) }));
+  setInterval(() => {
+    cleanupQueue().catch((err) => log.warn('kunne ikke rydde varslingskø', { error: String(err) }));
+  }, 6 * 60 * 60 * 1000);
 
   let delayMs = 1000;
   for (;;) {
@@ -183,12 +260,10 @@ async function run() {
       log.info('lytter på events_channel');
       delayMs = 1000;
 
-      client.on('notification', (msg) => {
-        try {
-          handle(JSON.parse(msg.payload));
-        } catch (err) {
-          log.warn('ugyldig notify-payload', { error: String(err) });
-        }
+      await drainQueue();
+
+      client.on('notification', () => {
+        drainQueue().catch((err) => log.warn('kunne ikke lese varslingskø', { error: String(err) }));
       });
 
       await new Promise((_, reject) => {
