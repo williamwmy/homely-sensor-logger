@@ -11,8 +11,8 @@
         "label": "Dør/sensor",
         "type": "query",
         "datasource": { "type": "postgres", "uid": "homely-pg" },
-        "definition": "SELECT DISTINCT trim(device_name) FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY 1",
-        "query": "SELECT DISTINCT trim(device_name) FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY 1",
+        "definition": "SELECT DISTINCT current_name(device_id) FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY 1",
+        "query": "SELECT DISTINCT current_name(device_id) FROM events WHERE feature = 'alarm' AND state_name = 'alarm' ORDER BY 1",
         "refresh": 1,
         "sort": 1,
         "multi": true,
@@ -32,7 +32,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT * FROM (SELECT DISTINCT ON (e.device_id) trim(e.device_name) AS \"dør\", CASE WHEN d.model_name ILIKE '%motion%' THEN (CASE WHEN e.value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN e.value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\", human_time(e.last_updated) AS \"siden\" FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' ORDER BY e.device_id, e.last_updated DESC) s ORDER BY \"dør\""
+          "rawSql": "SELECT * FROM (SELECT DISTINCT ON (e.device_id) current_name(e.device_id) AS \"dør\", CASE WHEN d.model_name ILIKE '%motion%' THEN (CASE WHEN e.value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN e.value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\", human_time(e.last_updated) AS \"siden\" FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' ORDER BY e.device_id, e.last_updated DESC) s ORDER BY \"dør\""
         }
       ],
       "fieldConfig": {
@@ -61,7 +61,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT human_time(e.last_updated) AS \"tid\", CASE WHEN d.model_name ILIKE '%motion%' THEN (CASE WHEN e.value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN e.value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\" FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE trim(e.device_name) = '$door' AND e.feature = 'alarm' AND e.state_name = 'alarm' ORDER BY e.last_updated DESC LIMIT 10"
+          "rawSql": "SELECT human_time(e.last_updated) AS \"tid\", CASE WHEN d.model_name ILIKE '%motion%' THEN (CASE WHEN e.value::text = 'true' THEN 'Bevegelse' ELSE 'Rolig' END) ELSE (CASE WHEN e.value::text = 'true' THEN 'Åpen' ELSE 'Lukket' END) END AS \"status\" FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE current_name(e.device_id) = '$door' AND e.feature = 'alarm' AND e.state_name = 'alarm' ORDER BY e.last_updated DESC LIMIT 10"
         }
       ],
       "fieldConfig": {
@@ -87,7 +87,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "WITH bounds AS (SELECT $__timeFrom()::timestamptz AS t_from, $__timeTo()::timestamptz AS t_to), doors AS (SELECT DISTINCT COALESCE(e.device_name, e.device_id) AS metric, e.device_id FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND COALESCE(d.model_name, '') NOT ILIKE '%motion%'), grid AS (SELECT t_from AS t FROM bounds UNION SELECT t_to FROM bounds UNION SELECT e.last_updated FROM events e LEFT JOIN devices d ON d.device_id = e.device_id, bounds WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND COALESCE(d.model_name, '') NOT ILIKE '%motion%' AND e.last_updated BETWEEN bounds.t_from AND bounds.t_to) SELECT g.t AS \"time\", dr.metric, (SELECT CASE WHEN e3.value::text = 'true' THEN 1 ELSE 0 END FROM events e3 WHERE e3.device_id = dr.device_id AND e3.feature = 'alarm' AND e3.state_name = 'alarm' AND e3.last_updated <= g.t ORDER BY e3.last_updated DESC LIMIT 1) AS state FROM doors dr CROSS JOIN grid g ORDER BY 1"
+          "rawSql": "WITH bounds AS (SELECT $__timeFrom()::timestamptz AS t_from, $__timeTo()::timestamptz AS t_to), doors AS (SELECT DISTINCT current_name(e.device_id) AS metric, e.device_id FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND COALESCE(d.model_name, '') NOT ILIKE '%motion%'), grid AS (SELECT t_from AS t FROM bounds UNION SELECT t_to FROM bounds UNION SELECT e.last_updated FROM events e LEFT JOIN devices d ON d.device_id = e.device_id, bounds WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND COALESCE(d.model_name, '') NOT ILIKE '%motion%' AND e.last_updated BETWEEN bounds.t_from AND bounds.t_to) SELECT g.t AS \"time\", dr.metric, (SELECT CASE WHEN e3.value::text = 'true' THEN 1 ELSE 0 END FROM events e3 WHERE e3.device_id = dr.device_id AND e3.feature = 'alarm' AND e3.state_name = 'alarm' AND e3.last_updated <= g.t ORDER BY e3.last_updated DESC LIMIT 1) AS state FROM doors dr CROSS JOIN grid g ORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -112,7 +112,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT date_bin('1 hour', e.last_updated, TIMESTAMPTZ '2000-01-01') AS \"time\", COALESCE(e.device_name, e.device_id) AS metric, count(*) FILTER (WHERE e.value::text = 'true') AS antall FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND d.model_name ILIKE '%motion%' AND $__timeFilter(e.last_updated) GROUP BY 1, 2 ORDER BY 1"
+          "rawSql": "SELECT date_bin('1 hour', e.last_updated, TIMESTAMPTZ '2000-01-01') AS \"time\", current_name(e.device_id) AS metric, count(*) FILTER (WHERE e.value::text = 'true') AS antall FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND d.model_name ILIKE '%motion%' AND $__timeFilter(e.last_updated) GROUP BY 1, 2 ORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -134,7 +134,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT last_updated AS \"time\", COALESCE(device_name, device_id) AS metric, (value::text)::float AS temperatur FROM events WHERE feature = 'temperature' AND state_name = 'temperature' AND $__timeFilter(last_updated) ORDER BY 1"
+          "rawSql": "SELECT last_updated AS \"time\", current_name(device_id) AS metric, (value::text)::float AS temperatur FROM events WHERE feature = 'temperature' AND state_name = 'temperature' AND $__timeFilter(last_updated) ORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -155,7 +155,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT human_time(last_updated) AS \"tid\", COALESCE(device_name, device_id) AS \"device\", feature, state_name AS \"state\", value::text AS \"verdi\", source AS \"kilde\" FROM events ORDER BY last_updated DESC LIMIT 50"
+          "rawSql": "SELECT human_time(last_updated) AS \"tid\", current_name(device_id) AS \"device\", feature, state_name AS \"state\", value::text AS \"verdi\", source AS \"kilde\" FROM events ORDER BY last_updated DESC LIMIT 50"
         }
       ],
       "fieldConfig": { "defaults": {}, "overrides": [] }
@@ -170,7 +170,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT COALESCE(device_name, device_id) AS \"device\", count(*) AS \"antall\" FROM events WHERE last_updated > now() - interval '7 days' GROUP BY 1 ORDER BY 2 DESC"
+          "rawSql": "SELECT current_name(device_id) AS \"device\", count(*) AS \"antall\" FROM events WHERE last_updated > now() - interval '7 days' GROUP BY 1 ORDER BY 2 DESC"
         }
       ],
       "fieldConfig": { "defaults": {}, "overrides": [] }
@@ -185,7 +185,7 @@
         {
           "refId": "A",
           "format": "table",
-          "rawSql": "SELECT DISTINCT ON (device_id, state_name) COALESCE(device_name, device_id) AS \"device\", state_name AS \"state\", value::text AS \"verdi\" FROM events WHERE feature = 'battery' ORDER BY device_id, state_name, last_updated DESC"
+          "rawSql": "SELECT DISTINCT ON (device_id, state_name) current_name(device_id) AS \"device\", state_name AS \"state\", value::text AS \"verdi\" FROM events WHERE feature = 'battery' ORDER BY device_id, state_name, last_updated DESC"
         }
       ],
       "fieldConfig": { "defaults": {}, "overrides": [] }

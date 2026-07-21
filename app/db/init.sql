@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS devices (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Nåværende navn for en device_id (fra devices-tabellen). Brukes av Grafana så
+-- visningen alltid følger sist kjente navn — en omdøpt sensor i Homely samles
+-- under det nye navnet i stedet for å splittes (events beholder navnet-ved-
+-- innsetting, men VISNINGEN resolver alltid det aktuelle navnet).
+CREATE OR REPLACE FUNCTION current_name(dev_id text) RETURNS text AS $$
+  SELECT COALESCE((SELECT name FROM devices WHERE device_id = dev_id), dev_id);
+$$ LANGUAGE sql STABLE;
+
 -- Lesbar relativ tid for tabeller i Grafana: «i dag HH:MM», «i går HH:MM»,
 -- ukedag denne uka, ellers dato. Alt i norsk lokaltid.
 CREATE OR REPLACE FUNCTION human_time(ts timestamptz) RETURNS text AS $$
