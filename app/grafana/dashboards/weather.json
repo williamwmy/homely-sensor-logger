@@ -4,6 +4,21 @@
   "timezone": "browser",
   "refresh": "5m",
   "time": { "from": "now-48h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "rom",
+        "type": "query",
+        "label": "Rom",
+        "datasource": { "type": "postgres", "uid": "homely-pg" },
+        "query": "SELECT DISTINCT current_name(device_id) FROM events WHERE feature = 'temperature' AND state_name = 'temperature' ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "includeAll": false,
+        "current": {}
+      }
+    ]
+  },
   "panels": [
     {
       "id": 1,
@@ -134,6 +149,56 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "id": 3,
+      "type": "trend",
+      "title": "Døgnprofil — $rom: i dag vs. i går, samme dag forrige uke og 7-dagers snitt",
+      "description": "Samme klokkeslett lagt oppå hverandre på tvers av dager. Les rett opp på ønsket time (f.eks. 18) for å sammenligne i dag mot i går / forrige uke / snittet. Fast vindu (siste 8 døgn) — dette panelet følger IKKE tidsvelgeren øverst.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
+      "datasource": { "type": "postgres", "uid": "homely-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "WITH params AS (SELECT (now() AT TIME ZONE 'Europe/Oslo')::date AS cur), src AS (SELECT date_part('hour', e.last_updated AT TIME ZONE 'Europe/Oslo')::int AS h, (e.last_updated AT TIME ZONE 'Europe/Oslo')::date AS d, (e.value::text)::float AS temp FROM events e WHERE e.feature = 'temperature' AND e.state_name = 'temperature' AND current_name(e.device_id) = '$rom' AND e.last_updated >= now() - interval '8 days') SELECT s.h AS \"Klokkeslett\", round(avg(s.temp) FILTER (WHERE s.d = p.cur)::numeric, 1) AS \"I dag\", round(avg(s.temp) FILTER (WHERE s.d = p.cur - 1)::numeric, 1) AS \"I går\", round(avg(s.temp) FILTER (WHERE s.d = p.cur - 7)::numeric, 1) AS \"For 7 dager siden\", round(avg(s.temp) FILTER (WHERE s.d BETWEEN p.cur - 7 AND p.cur - 1)::numeric, 1) AS \"7-dagers snitt\" FROM src s CROSS JOIN params p GROUP BY s.h ORDER BY s.h"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "auto", "spanNulls": true, "lineInterpolation": "smooth" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "I dag" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } },
+              { "id": "custom.lineWidth", "value": 3 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "I går" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "For 7 dager siden" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "light-blue" } } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "7-dagers snitt" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } },
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [8, 6] } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "Klokkeslett",
+        "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "none" }
       }
     }
   ],
