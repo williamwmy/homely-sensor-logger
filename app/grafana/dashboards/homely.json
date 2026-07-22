@@ -104,24 +104,38 @@
     },
     {
       "id": 30,
-      "type": "timeseries",
-      "title": "Bevegelse — aktivitet per time",
+      "type": "barchart",
+      "title": "Bevegelse — aktivitet per halvtime",
       "gridPos": { "h": 7, "w": 24, "x": 0, "y": 37 },
       "datasource": { "type": "postgres", "uid": "homely-pg" },
       "targets": [
         {
           "refId": "A",
-          "format": "time_series",
-          "rawSql": "SELECT date_bin('1 hour', e.last_updated, TIMESTAMPTZ '2000-01-01') AS \"time\", current_name(e.device_id) AS metric, count(*) FILTER (WHERE e.value::text = 'true') AS antall FROM events e LEFT JOIN devices d ON d.device_id = e.device_id WHERE e.feature = 'alarm' AND e.state_name = 'alarm' AND d.model_name ILIKE '%motion%' AND $__timeFilter(e.last_updated) GROUP BY 1, 2 ORDER BY 1"
+          "format": "table",
+          "rawSql": "WITH buckets AS (SELECT generate_series(date_bin('30 minutes', $__timeFrom(), TIMESTAMPTZ '2000-01-01'), date_bin('30 minutes', $__timeTo(), TIMESTAMPTZ '2000-01-01'), interval '30 minutes') AS b) SELECT to_char(b AT TIME ZONE 'Europe/Oslo', 'HH24:MI') || '–' || to_char((b + interval '30 minutes') AT TIME ZONE 'Europe/Oslo', 'HH24:MI') AS \"tid\", count(e.id) FILTER (WHERE e.value::text = 'true') AS \"antall\" FROM buckets LEFT JOIN events e ON e.last_updated >= b AND e.last_updated < b + interval '30 minutes' AND e.feature = 'alarm' AND e.state_name = 'alarm' AND e.device_id IN (SELECT device_id FROM devices WHERE model_name ILIKE '%motion%') GROUP BY b ORDER BY b"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "custom": { "drawStyle": "bars", "fillOpacity": 70, "lineWidth": 1, "pointSize": 5 },
+          "custom": { "lineWidth": 1, "fillOpacity": 80, "gradientMode": "none", "axisPlacement": "auto" },
           "color": { "mode": "fixed", "fixedColor": "orange" }
         },
         "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "xField": "tid",
+        "barWidth": 0.9,
+        "groupWidth": 0.7,
+        "barRadius": 0,
+        "showValue": "auto",
+        "stacking": "none",
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 100,
+        "fullHighlight": false,
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": { "showLegend": false, "displayMode": "list", "placement": "bottom" }
       }
     },
     {
